@@ -1,0 +1,34 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.*
+credentials.*
+
+# Local ANSHU user data (conversation history, saved memory, reminders)
+jarvis_local_data/
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Logs and runtime artifacts
+*.log
+logs/
+*.pid
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+.idea/

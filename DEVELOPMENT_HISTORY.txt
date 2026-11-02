@@ -1,0 +1,577 @@
+ANSHU PHASE 40 — EVIDENCE-LAYER PROJECT STATUS
+================================================
+Built on Phase 39.1. This update improves obstacle-avoidance status answers without changing the simulator controls or claiming physical robot capabilities.
+
+Phase 40:
+- Status answers are separated into four evidence layers: discussed/planned, ESP32 firmware code, simulator telemetry, and physical hardware verification.
+- The current browser telemetry only reports simulator state. Therefore firmware implementation and physical hardware verification remain explicitly unknown until source inspection and a real test are provided.
+- The simulator status reflects the live autoAvoid flag: enabled or disabled. Missing telemetry is reported as unknown.
+- No new hardware control, firmware flashing, or autonomous physical movement has been added.
+
+Install:
+1. Stop ANSHU with Ctrl+C.
+2. Extract this ZIP into a NEW folder.
+3. Copy your existing jarvis_local_data folder into the extracted jarvis_phase13_ui_refined folder to preserve local conversations and memory.
+4. Open the inner jarvis_phase13_ui_refined folder, type cmd in the address bar, and run: py server.py
+5. Open http://localhost:8000 and press Ctrl+F5.
+
+Test in ANSHU:
+- Did we implement obstacle avoidance?
+- Is obstacle avoidance enabled?
+- Have we tested obstacle avoidance on the physical robot?
+
+Expected: ANSHU reports the plan, code status, simulator status, and physical test status separately. It must not treat simulator state as proof of ESP32 firmware or real-world operation.
+
+ANSHU PHASE 25 — LOCAL SECURITY HARDENING
+=========================================
+
+This build is based on the user-confirmed Phase 24.2 and preserves existing features. It adds local request hardening and safer file opening. Read SECURITY_AUDIT.md for safeguards and limitations. No software can be guaranteed fully safe.
+
+ANSHU PHASE 23.1 — STRICT PROJECT MATCHING FIX
+==================================================
+This build is based on the user-confirmed Phase 22.1 Python project folder fix and preserves the existing assistant, voice, memory, robotics, website opening, and file-search features.
+
+Phase 23.1 fix:
+- Project folder matching is now strict: a folder named “AI” or “mind” cannot be selected as a match for “AgroMind”.
+- Candidate folder names must contain the requested project name in the correct direction, and project-like contents help rank valid matches.
+- If the match is missing or ambiguous, ANSHU refuses to open an unrelated folder and asks for a more exact folder name.
+
+Retained Phase 23 feature:
+- A read-only project workflow can find a named project folder inside the configured allowed roots, open that folder in VS Code, and report its top-level files and folders. Example: “find my AgroMind project, open it in VS Code, and tell me what files it contains”.
+- VS Code is launched with a validated project folder path using subprocess arguments and shell=False. No terminal commands are generated or executed.
+- The project contents shown are limited to visible top-level entries, and file-open buttons are provided only for validated files.
+- Every action still requires plan preview and explicit “Confirm and run”.
+- Existing website and file-type search commands remain available. Arbitrary shell commands, file deletion, file editing, software installation, and autonomous code changes are not included.
+
+Install safely:
+1. Stop the current server with Ctrl+C.
+2. Extract this ZIP into a NEW folder; do not overwrite Phase 20.1, Phase 21.2, or Phase 22.1.
+3. Open the inner jarvis_phase13_ui_refined folder.
+4. Type cmd in File Explorer's address bar and press Enter.
+5. Run: py server.py
+6. Open http://localhost:8000 and press Ctrl+F5.
+7. Open Desktop Tools → Computer Control Agent.
+
+Suggested tests:
+- find my AgroMind project, open it in VS Code, and tell me what files it contains
+- find my Travix project, open it in VS Code, and tell me what files it contains
+- open github.com
+- find my Python projects and open the folder
+- cancel a plan and confirm no action is taken
+- try an unsupported terminal command and verify it is rejected
+
+Validation performed in the build environment: Python syntax, JavaScript syntax, supported/unsupported command planner cases, and ZIP integrity. Actual project discovery and VS Code launch must still be tested on the user's Windows computer. Keep the user-confirmed Phase 22.1 ZIP and Phase 23 ZIP as rollback builds.
+
+Install safely:
+1. Stop the current server with Ctrl+C.
+2. Extract this ZIP into a NEW folder; do not overwrite Phase 20.1 or Phase 21.2.
+3. Open the inner jarvis_phase13_ui_refined folder.
+4. Type cmd in File Explorer's address bar and press Enter.
+5. Run: py server.py
+6. Open http://localhost:8000 and press Ctrl+F5.
+7. Open Desktop Tools → Computer Control Agent.
+
+Suggested tests:
+- open github.com
+- find Python files
+- search for .py files
+- find files for resume
+- find my Python projects and open the folder
+- open VS Code and search files for README
+- cancel a plan and confirm no action is taken
+
+This build passed Python syntax checks, frontend JavaScript syntax checks, command-planner tests, and unsafe URL/command rejection tests. Website opening and Windows app/folder behavior still need to be tested on the user's Windows computer.
+
+------------------------------------------------------------
+
+ANSHU PHASE 18 — SMARTER AI BRAIN & RELIABLE COMMAND ROUTING
+============================================================
+
+This is an incremental update based on the confirmed Phase 17.6 build.
+It preserves the existing ANSHU interface, animated orb, voice interaction,
+vision tools, desktop tools, saved memory, reminders, and Three.js robotic lab.
+
+WHAT CHANGED
+------------
+1. Dialogue history is now sent to the local model as actual user/assistant
+   turns, rather than being mixed into the system instructions. This helps
+   small local models follow context and understand follow-up questions.
+2. Robot commands are routed deterministically for clear, direct commands.
+   The language model is no longer allowed to trigger a robot action by
+   guessing. Questions such as "How do I move backward?" do not move the robot.
+3. Added direct routing for forward, backward/reverse, left/right, stop,
+   initialize, autonomous/manual mode, missions, and wiring/component labels.
+4. Reduced response randomness and set a response token limit for steadier,
+   more predictable local answers.
+5. Preserved the existing API endpoints and all existing frontend files.
+
+START ON WINDOWS 10/11
+----------------------
+1. Extract this ZIP into a NEW folder. Do not overwrite your previous build.
+2. Open the inner folder named: jarvis_phase13_ui_refined
+3. Click File Explorer's address bar, type cmd, and press Enter.
+4. Run: py server.py
+5. Keep the terminal open and open Chrome at: http://localhost:8000
+6. Press Ctrl+F5 in Chrome once to reload the frontend without stale cache.
+7. Leave Ollama running. The text model is qwen2.5:3b and the vision model
+   is qwen2.5vl:3b. If needed, run these in a separate terminal:
+       ollama pull qwen2.5:3b
+       ollama pull qwen2.5vl:3b
+
+TEST CHECKLIST
+--------------
+A. Brain and context (no robot action should occur):
+   - "Explain what a variable is in Python."
+   - "Give me a simple example."
+   - "Make that example shorter."
+   The last two should use the prior conversation as context.
+
+B. Robot direction and safe intent routing:
+   - "Move backward the robot car." -> should move backward.
+   - "Move forward the robot car." -> should move forward.
+   - "How do I move backward?" -> should answer the question without moving.
+   - "What happens if I say move forward?" -> should answer without moving.
+   - "Turn left." and "Turn right." -> should use the matching direction.
+   - "Stop robot." -> should stop the simulation.
+
+C. Other existing features:
+   - Ask "What is your name?" -> ANSHU.
+   - Ask "What is my name?" -> ANSHU should not guess.
+   - Test voice listening, stop speaking, desktop file search, memory,
+     reminders, vision, and the robotic lab.
+
+IMPORTANT NOTES
+---------------
+- This robot is a browser simulation; these commands do not control physical
+  hardware.
+- Keep your previous Phase 17.6 ZIP/folder as a rollback copy.
+- This package passed local syntax, command-routing, and ZIP-integrity checks.
+  It has not been tested on your specific Windows computer.
+- If anything regresses, stop the server with Ctrl+C and return to your
+  previous Phase 17.6 folder. Your previous build is not modified by this ZIP.
+
+
+PHASE 19 — VOICE INTELLIGENCE & RELIABILITY
+- Shows interim transcription feedback without executing commands until a final transcript is received.
+- Suppresses repeated final transcripts arriving within a short window after recognition restarts.
+- Protects speech playback from stale utterance callbacks when a response is interrupted.
+- Makes “stop speaking” restore the correct orb and listening state.
+- Improves voice restart scheduling and gives clearer microphone/network/no-speech error guidance.
+- Keeps existing UI, backend APIs, robot commands, desktop tools, memory, vision, and local Ollama integration.
+
+INSTALL
+1. Extract this ZIP to a NEW folder; do not overwrite your working Phase 18 folder.
+2. Open the inner jarvis_phase13_ui_refined folder.
+3. Type cmd in File Explorer's address bar and press Enter.
+4. Run: py server.py
+5. Open http://localhost:8000 and press Ctrl+F5. Keep Ollama running.
+
+TEST
+- Enable voice and speak a full sentence; interim words should appear, but commands should execute only once after final speech.
+- Ask ANSHU a question, then immediately ask a follow-up.
+- While ANSHU speaks, click the voice button/orb or say a stop-speaking command if your setup allows it; verify the orb and mic state recover.
+- Try voice with no speech, then check that guidance is understandable.
+- Test robot forward/backward and stop commands in the robotic lab.
+
+NOTE
+Browser speech recognition support and network requirements depend on the browser. Voice recognition may use the browser's speech service and is not guaranteed to be fully offline. These changes were syntax- and package-validated, but must be tested in the user's browser and microphone setup.
+
+
+PHASE 20 — ADVANCED ROBOTICS SAFETY UPDATE
+------------------------------------------
+Added:
+- Safety Assist toggle for manual driving.
+- Front and rear proximity telemetry.
+- Soft-stop when driving toward a nearby obstacle (front and rear).
+- Existing collision geometry remains as a second safety layer.
+- Empty-battery protection for manual drive, autonomous navigation, and missions.
+- Reset Simulation Battery control for repeatable testing.
+- Safety status indicator in rover telemetry.
+
+Install:
+1. Extract this ZIP into a new folder; keep Phase 19.1 unchanged as a backup.
+2. Open the inner jarvis_phase13_ui_refined folder.
+3. Type cmd in File Explorer's address bar and run: py server.py
+4. Open http://localhost:8000 and press Ctrl+F5.
+
+Tests:
+- Start the robotic lab and confirm Safety Assist shows ON / ARMED.
+- Drive toward an obstacle slowly; front safety should pause forward movement near it.
+- Turn around and reverse toward an obstacle; rear safety should pause reverse movement near it.
+- Toggle Safety Assist OFF and ON to verify the status updates. The physical simulation collision check remains active when assist is OFF.
+- Run AUTO NAV and a mission; confirm the rover avoids obstacles.
+- Use RESET SIM BATTERY to restore 100% after long testing.
+- Emergency Stop should stop the rover at any time.
+
+This is a browser-based simulation, not a real robot controller. The safety assist is a software feature and is not a substitute for physical emergency stops or hardware safety systems.
+
+
+PHASE 20.1 VISIBILITY FIX
+-------------------------
+The Robot Safety panel is now a separate, clearly labelled panel at the top
+of the robotic lab side panel, with its own Safety Assist and Reset Sim Battery
+buttons plus front/rear range readings.
+
+IMPORTANT: if the new controls do not appear, an older server may still be
+running on port 8000. Go to the terminal that started the previous ANSHU
+server and press Ctrl+C. Then open CMD inside this extracted build's inner
+jarvis_phase13_ui_refined folder and run: py server.py
+Refresh Chrome with Ctrl+F5. Make sure you did not launch server.py from the
+Phase 19.1 or Phase 20 folder by mistake.
+
+
+PHASE 21.1 — COMPUTER CONTROL AGENT
+===================================
+
+New in this build:
+- Adds a Computer Control Agent card inside the existing Desktop Tools panel.
+- Supports a small deterministic command grammar for approved app launch,
+  scoped filename search, opening a folder by name within allowed roots, and
+  a supported two-step workflow: launch an approved app, then search files.
+- Requires a user to review a generated plan and press "Confirm and run".
+- Uses short-lived server-generated plan tokens. The server never accepts
+  shell commands or arbitrary executable paths from the agent.
+- Adds Visual Studio Code as an optional allowlisted application when found
+  in PATH or its usual Windows installation locations.
+- File search results can be opened through the existing path validation.
+- Existing ANSHU voice, memory, vision, desktop tools, and robotic lab remain.
+
+Supported task examples:
+- "Open Notepad"
+- "Open VS Code"
+- "Search files for resume"
+- "Open folder Projects"
+- "Open VS Code and search files for README"
+
+Access scope:
+- Configured Desktop, Documents, Downloads, Projects, source, and OneDrive
+  Documents roots that already exist on this computer.
+- Folder opening and file opening are validated against those roots.
+- App launches use a fixed allowlist and subprocess shell=False.
+- The planner is deterministic in this first release. Ollama is not trusted
+  to generate executable actions. Arbitrary terminal commands, file editing,
+  deletion, installation, screen screenshots, and visual clicking are not
+  included in Phase 21.1.
+
+INSTALL ON WINDOWS:
+1. Extract this ZIP into a NEW folder; do not overwrite Phase 20.1.
+2. Open the inner jarvis_phase13_ui_refined folder.
+3. Type cmd in File Explorer's address bar and press Enter.
+4. Run: py server.py
+5. Open http://localhost:8000 and press Ctrl+F5.
+6. Open Desktop Tools in the left capability sidebar. The Computer Control
+   Agent card should appear above the existing Quick Desktop Command card.
+
+TEST CHECKLIST:
+- Plan "Open Notepad"; confirm; verify Notepad launches.
+- Plan "Search files for resume"; confirm; verify matching filenames appear.
+- Plan "Open folder Projects"; confirm; verify it opens only if a matching
+  folder exists under configured allowed roots.
+- Plan "Open VS Code and search files for README"; confirm; verify both steps.
+- Try "delete all files" and an arbitrary terminal command; the planner must
+  reject them as unsupported and must not execute anything.
+- Cancel a plan; verify nothing runs.
+- Reuse an old plan token after execution or after a few minutes; server rejects it.
+
+VALIDATION:
+Python syntax and ZIP integrity were checked. Frontend JavaScript syntax check
+depends on Node.js being available in the build environment. Test live Windows
+app paths and browser behavior on your computer. Keep the Phase 20.1 ZIP as the
+known-good rollback build.
+
+PHASE 24 — VOICE-CONTROLLED COMPUTER WORKFLOWS
+==============================================
+
+New in this build:
+- Voice requests can open the Computer Control Agent panel and prepare a
+  predefined plan, using the existing strict project-name matcher.
+- Examples: "Hey ANSHU, open AgroMind in VS Code" and
+  "Hey ANSHU, find Python files".
+- Voice-created plans are NOT executed automatically. Review the plan and click
+  "Confirm and run" to authorize it.
+- Say "cancel computer task" or "cancel computer plan" to cancel a pending
+  plan or an in-flight plan request before execution.
+- Voice cancellation does not claim to interrupt an action already executing.
+- Existing wake-word behavior, stop-speaking barge-in, robot voice commands,
+  memory, vision, and computer controls are preserved.
+
+Supported voice workflow examples:
+- "Hey ANSHU, open AgroMind in VS Code"
+- "Hey ANSHU, find Python files"
+- "Hey ANSHU, search files for README"
+- "Hey ANSHU, open folder Downloads"
+- "Hey ANSHU, cancel computer task"
+
+Safety behavior:
+- The browser speech recognizer converts speech to text; availability depends
+  on browser microphone permissions and its speech-recognition service.
+- The server-side deterministic planner still validates every task.
+- Voice only fills and plans a task; it never bypasses the confirmation button.
+- Arbitrary shell commands, unrestricted file access, and automatic execution
+  are not introduced by this phase.
+
+PHASE 24 TEST CHECKLIST:
+1. Enable voice and say "Hey ANSHU, open AgroMind in VS Code".
+2. Confirm Desktop Tools opens and the task plan appears.
+3. Verify ANSHU does not open anything until you click "Confirm and run".
+4. Create a plan and say "cancel computer task"; verify the plan is cancelled.
+5. Say "Hey ANSHU, find Python files"; review the search plan and confirm it.
+6. Retest "stop speaking" and the robotic lab emergency stop command.
+
+
+PHASE 24.1 FIX
+- Improved voice routing for direct project commands such as “Hey ANSHU, open AgroMind in VS Code”.
+- Handles wake words included in the transcript and common project-name phrasing variants.
+- Clear computer-control requests that cannot be safely parsed no longer silently fall through to the general chatbot.
+- All computer actions still require reviewing and confirming the plan.
+
+
+PHASE 24.2 VOICE/CHAT COMPUTER ROUTING FIX
+Clear computer-control requests are routed to the existing confirmation-gated Computer Control Agent before the general /api/chat call. Try: "Hey ANSHU, open AgroMind in VS Code". The request should create a plan for review, not a generic chatbot response. Confirm the plan before execution.
+
+
+SECURITY NOTES
+- Server listens on 127.0.0.1 only. Do not expose port 8000 to a network or public tunnel.
+- Only the UI entry page is served; server source, README, and local database are not served over HTTP.
+- POSTs are restricted to local origins, JSON, and basic rate limits.
+- Known executable/script/installer file types are blocked from the file-open action.
+- Read SECURITY_AUDIT.md for important caveats and safe-use guidance.
+
+
+PHASE 26 — LOCAL OFFLINE VOICE (CHECKPOINT-BASED)
+=================================================
+This is an incremental update to the supplied ANSHU Phase 25 checkpoint.
+It does not replace the app with the earlier JARVIS Phase 13 package.
+
+New voice controls in the existing VOICE LINK card:
+- OFFLINE PUSH-TO-TALK: records a short microphone clip in the browser and
+  sends it only to the local ANSHU server for transcription.
+- OFFLINE WAKE: repeatedly transcribes short local audio clips and looks for
+  "Hey ANSHU", "Okay ANSHU", or "ANSHU". If the wake phrase is detected alone,
+  speak the command during the following short armed window.
+- Language selector: Auto Detect, English, or Malayalam.
+- Uses faster-whisper Small with CPU int8 decoding. This is multilingual and
+  runs locally after its model files are downloaded.
+- Existing browser voice controls remain available as a separate fallback.
+- Existing browser speech synthesis remains in place. It uses locally
+  installed Windows/browser voices when available; it does not guarantee a
+  natural female Malayalam voice. Install a compatible Malayalam female
+  speech voice in Windows if one is available for your system.
+
+INSTALL:
+1. Extract this project to a NEW folder. Keep your Phase 25 folder unchanged.
+2. Run INSTALL_OFFLINE_VOICE.bat once while connected to the internet.
+3. The first transcription downloads the Whisper Small model; keep internet
+   connected until that download finishes.
+4. Run py server.py from this folder and open http://localhost:8000.
+5. Press Ctrl+F5. Use OFFLINE PUSH-TO-TALK first, then OFFLINE WAKE.
+6. Disconnect the internet and repeat the tests to verify local operation.
+
+NOTES / LIMITATIONS:
+- The browser microphone is accessed on localhost; Chrome will ask permission.
+- Offline Wake transcribes 4.5-second clips. It is a local Whisper-based wake
+  phrase detector, not a low-power dedicated wake-word model. It can have
+  several seconds of latency and higher CPU use.
+- Whisper Small supports multilingual recognition, including Malayalam, but
+  recognition quality depends on microphone, noise, and speaking style.
+- Text-to-speech is still browser speechSynthesis using installed local voices.
+  Female English voice selection is best-effort. Malayalam TTS is available
+  only if Windows/browser exposes a Malayalam voice; otherwise recognition
+  works but spoken Malayalam replies may not.
+- Voice clips are sent only to 127.0.0.1 by the browser code. No cloud speech
+  API is called by the new offline transcription endpoint.
+- The existing security posture remains: loopback-only server, same-origin
+  checks, JSON-only POSTs, rate limiting, and no shell command execution.
+
+VALIDATION:
+- Run: py -m py_compile server.py
+- Run: py -m unittest discover -s tests -v
+- Test on the target Windows machine with a real microphone. This package has
+  not been tested on the user's actual microphone or Windows voice inventory.
+
+
+PHASE 27 - OFFLINE VOICE SPEED OPTIMIZATION
+-------------------------------------------
+This update changes offline transcription from Whisper Small to Whisper Base
+using faster-whisper INT8 on CPU. It reduces decoding beam size from 5 to 1,
+uses a single best candidate, and configures six CPU threads. Push-to-talk
+recording is shortened from 6.5 to 5.5 seconds; wake-listening chunks are
+shortened from 4.5 to 3.5 seconds. These are speed/latency trade-offs and may
+slightly reduce recognition accuracy, especially in noisy environments.
+
+The Base model is a separate model download from Small. The first run after
+this update needs internet to download it; later runs use the local cache.
+The previous Small model cache is not deleted. To return to Small, change
+WhisperModel("base"...) to WhisperModel("small"...) in server.py.
+
+CPU performance varies by laptop power mode, background load, microphone
+quality, and command length. Six CPU threads are a starting configuration;
+this has not been benchmarked on the user's Windows laptop.
+
+
+PHASE 28 — SECURE LOCAL STREAMING CHAT
+======================================
+
+This incremental update adds local Ollama token streaming to the normal chat
+path. When the UI sends stream=true, the existing localhost server requests a
+stream from Ollama at 127.0.0.1:11434 and forwards newline-delimited JSON
+(token deltas) to the browser. The chat bubble updates as tokens arrive rather
+than waiting for the complete answer. The completed assistant answer is saved
+to the existing local SQLite conversation history.
+
+No cloud AI provider, cloud speech API, or online TTS provider is configured.
+The streaming endpoint uses the same loopback Host validation, same-origin
+validation, JSON-only POST policy, request-size limit, and per-endpoint rate
+limit as the normal chat endpoint. It emits no permissive CORS headers. Model
+output is treated as text only; model-generated actions are not executed.
+Robot simulation commands continue to use the deterministic explicit-command
+allowlist. The server still binds only to 127.0.0.1.
+
+Current Phase 28 scope and limitations:
+- Chat text streams from local Ollama as tokens arrive.
+- Voice transcription remains local faster-whisper Base INT8 (English and
+  Malayalam supported by the multilingual model).
+- The current voice UI still uses short MediaRecorder clips; this update does
+  not yet provide true continuous/partial streaming ASR or sentence-by-sentence
+  speech synthesis. Voice responses are spoken after the final answer arrives.
+- Local TTS uses voices installed in Windows/browser. Voice quality and
+  Malayalam availability depend on installed system voices.
+- The page still references some third-party CDN assets (fonts, vision and
+  hand-tracking libraries). They are not AI providers, but may make network
+  requests and may not load offline. Full air-gapped operation requires
+  auditing and bundling those assets locally in a later hardening pass.
+- Ollama and Whisper models must already be installed/cached for offline use.
+
+To run: use the same Phase 27 setup and start with `py server.py`. No database
+migration is required. Keep the Phase 27 folder as a rollback copy until you
+have tested Phase 28 on your own machine.
+
+
+PHASE 29 — CHAT RESPONSE FORMAT FIX
+==================================
+
+Fixes a Phase 28 browser/server response-format mismatch. Some deterministic
+local routes (including assistant identity questions and allowlisted robot
+commands) return ordinary JSON, while the Phase 28 browser expected every
+response to be newline-delimited streaming JSON. The browser now detects and
+handles both formats. Streaming parsing also flushes the decoder and processes
+a final unterminated line, avoiding loss of the last event.
+
+No server security rules, AI providers, voice engines, or database schema were
+changed. The existing SQLite database is retained.
+
+PHASE 30 — LOCAL REAL-TIME VOICE ACTIVITY DETECTION
+===================================================
+- Replaces fixed-duration offline voice clips with browser-side voice-activity detection (VAD).
+- Push-to-talk now records until speech ends, with a bounded maximum recording time and a no-speech timeout.
+- The main microphone/orb now uses local VAD + the existing local faster-whisper endpoint; it no longer starts the browser SpeechRecognition service.
+- Offline wake mode segments speech at natural pauses and sends each completed utterance to local Whisper.
+- Wake phrase filtering is local. The wake button starts wake-word mode; the “Hey ANSHU” control toggles whether a wake phrase is required.
+- Listening is paused while ANSHU speaks to reduce transcription of its own TTS output.
+- Microphone access remains explicit and is active only after the user enables voice; stop the mic to close the stream.
+
+LIMITATIONS
+-----------
+- This is endpoint-detected utterance transcription, not true partial/word-by-word streaming ASR. Whisper runs after a pause is detected.
+- Local Whisper Base INT8 may take time to process each utterance on CPU.
+- TTS still begins after the full assistant response; sentence streaming TTS and voice barge-in are not included yet.
+- The browser's installed speechSynthesis voice is used for local playback; voice/language availability depends on Windows and Chrome.
+- First-time model installation/download still needs internet. Once the model is cached, transcription runs locally.
+- Validate microphone behavior, VAD threshold, and latency on the target Windows laptop and room environment.
+
+INSTALL
+-------
+Extract into a NEW folder, open jarvis_phase13_ui_refined, run `py server.py`, then open http://localhost:8000. Keep the previous working Phase 29 folder as backup.
+
+
+PHASE 31 - LIVE CONVERSATIONAL VOICE
+- Voice responses begin speaking sentence-by-sentence while local Ollama text is still streaming.
+- Uses browser/Windows speechSynthesis voices; no cloud TTS provider is added.
+- With Offline Wake explicitly enabled, local microphone energy monitoring can interrupt playback after sustained speech energy; local wake transcription then resumes.
+- Stop Speaking remains available.
+- Limitations: system voice availability varies; sentence-level streaming is not phoneme-level synthesis. Barge-in detection depends on microphone gain, room noise, and echo cancellation. Whisper still transcribes after end-of-utterance detection; partial ASR is not included.
+
+
+PHASE 32 - VOICE FALSE-TRIGGER AND DUPLICATE FIX
+- Raises local VAD threshold and requires sustained speech before accepting a clip.
+- Adds a post-TTS quiet period to prevent the assistant's own voice/residual echo from being treated as a new user utterance.
+- Adds exact duplicate transcript suppression for 10 seconds.
+- Wake-required mode ignores transcriptions unless a fresh wake phrase was detected or a wake command is currently armed.
+- These are heuristic protections; microphone gain, room noise, speaker volume, and Whisper model quality still affect accuracy.
+
+
+PHASE 33 - ENGLISH-ONLY MODE
+- The offline voice interface is fixed to English; automatic language detection and alternate-language selection have been removed.
+- The local faster-whisper endpoint explicitly transcribes English and rejects non-English language settings.
+- Browser speech output selects installed English voices only and uses en-US as its fallback.
+- The assistant system instruction requires English responses, including when a user message is in another language.
+- This does not translate non-English input; voice recognition is configured for English only.
+
+
+PHASE 34 - VOICE CONTROL CENTER
+- Added microphone sensitivity, end-of-speech pause, and assistant speaking speed controls.
+- Settings are saved locally in browser storage on this device.
+- English-only voice selection is enforced for speech output.
+- Defaults: balanced sensitivity, 850 ms pause, 1.0x speaking speed.
+
+
+PHASE 35 - LOCAL SYSTEM HEALTH & DIAGNOSTICS
+- Added an explicit Run System Check panel in the right sidebar.
+- Checks the local ANSHU page, local Ollama availability/model presence, browser microphone API/permission state, and English browser speech output.
+- Does not request microphone permission, record audio, or contact any remote service.
+- A successful check is a readiness indication, not a complete hardware, latency, or security audit.
+
+
+PHASE 35.1 — DIAGNOSTICS PANEL LAYOUT FIX
+- Right sidebar cards no longer shrink and clip their content.
+- Right sidebar has a visible vertical scrollbar and contained scroll behavior.
+- System Health & Diagnostics has an independently scrollable results area.
+- Long diagnostic results wrap safely and remain readable on shorter displays.
+- No backend, AI, microphone, or database behavior changed.
+
+
+PHASE 36 — SMART LOCAL MEMORY
+- Memory remains explicit and user-approved; ANSHU does not silently save personal facts.
+- Added local memory search, inline editing, individual deletion, and confirmed clear-all.
+- Chat context selects relevant saved memories by keyword overlap, then recent saved memories.
+- Memory stays in the existing local memory.json store; conversation history remains in SQLite.
+- No cloud service, external memory API, or new dependency added.
+
+
+PHASE 36.1 — MEMORY RECALL FIX
+- Typed "Remember that ..." chat messages save directly through the local memory API.
+- Streaming chat requests retain saved-memory context in the system prompt.
+- Memory remains local in jarvis_local_data/memory.json.
+
+PHASE 37 - INTELLIGENT LOCAL CONTEXT
+- Chat now includes up to 12 recent conversation messages, with per-message length limits.
+- After longer conversations, ANSHU creates a compact extractive summary of older local turns in SQLite. This is local text selection, not an LLM-generated summary.
+- Saved memories are included only when they share meaningful keywords with the current request; the old fallback that injected unrelated recent memories has been removed.
+- The Memory panel includes a toggle to exclude saved memories from AI replies. The setting is stored locally in jarvis_local_data/context_settings.json.
+- A conservative request-type hint (learning, writing, planning, technical help, or general advice) helps small local models select a response style. It does not grant tool access.
+- Summary and memory content are explicitly treated as untrusted context, never as instructions.
+- Existing conversation and memory data are retained. SQLite adds one small conversation_summary table automatically at startup.
+\n\nPHASE 37.1 - SAVED MEMORY RECALL FIX\nClear saved preference questions are now answered directly from enabled local saved memories before the Ollama request. This avoids relying on the small language model to infer a simple stored fact. No memory data is deleted.\n
+PHASE 38 — RELEVANT LOCAL CONVERSATION RECALL
+- Chat retrieves up to three relevant older user/assistant exchanges from the existing local SQLite conversation history using conservative keyword overlap.
+- The latest 12 conversation messages remain in normal dialogue context and are not duplicated in the older-history excerpts.
+- Retrieval is bounded to the latest 400 stored messages and a maximum of five excerpts; it does not automatically create saved personal memories.
+- Retrieved conversation text is explicitly marked as untrusted historical context, never as instructions.
+- No cloud service, new dependency, or database migration is required. Existing conversations and saved memories are retained.
+
+
+PHASE 38.1 — PROJECT-AWARE CONVERSATION RECALL FIX
+- Clear questions about previously discussed ESP32 robot-car features are answered directly from local conversation history, rather than relying on the language model to infer the answer.
+- Follow-up questions such as “What other features did we plan?” can inherit the robot-project context from recent turns.
+- Recall lists only features found in the user's stored messages and labels them as discussed ideas, not implemented hardware or live device status.
+- The recall path is independent of the saved-memory toggle; disabling saved personal memories does not disable local conversation-history recall.
+- Streaming responses use the same newline-delimited event format as the existing Phase 37.2 fix.
+- Existing SQLite history and saved-memory files are retained; no new dependency or schema migration is required.
+\n\nPHASE 38.2 - RECALL PRECISION\n- Recalls specific camera module names mentioned in assistant suggestions (OV7670 / OV2640).\n- Clearly labels suggested components as suggestions, not user selections.\n- Follow-up questions about other planned features now distinguish already-discussed items from additional agreed plans.\n- Feature lists are grounded in user messages; unrelated later topics are excluded.\n\n\nPHASE 38.3 - PROJECT HISTORY ANCHOR FIX\n- Recall anchors to the original project-start message instead of the latest follow-up question.\n- Recovers feature requests across the original ESP32 robot-car discussion.\n- Recalls camera module suggestions from assistant turns and labels them as suggestions.\n- Stops at a clear topic change to avoid mixing unrelated conversations.\n\n\nPHASE 39 - PROJECT STATUS TRUTH GUARD\n- Implementation questions about ESP32 robot-car obstacle avoidance are answered deterministically from local context.\n- Clearly separates discussed ideas, simulator flags, and verified physical hardware implementation.\n- A simulator autoAvoid=true/false value is never treated as proof of real hardware implementation.\n- No cloud service, new dependency, database migration, or hardware control action is added.\n
+PHASE 41 - CONVERSATIONAL PROJECT STATUS
+- Status questions now receive answers focused on the requested evidence layer.
+- 'Did we implement ...?' focuses on ESP32 firmware inspection status.
+- 'Is ... enabled?' focuses on simulator telemetry and explicitly avoids implying firmware or hardware completion.
+- 'Have we tested ... on the physical robot?' focuses on recorded physical test evidence.
+- Missing simulator telemetry remains Unknown; missing firmware/physical evidence is never treated as success.
+- Existing local memory, conversation history, security checks, and localhost-only operation are preserved.

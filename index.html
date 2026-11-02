@@ -1,0 +1,3725 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ANSHU — Personal AI Assistant</title>
+<meta name="description" content="ANSHU Phase 13 — Local AI assistant with voice interaction, vision, robotic lab simulation, and desktop intelligence.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* ─── DESIGN TOKENS ───────────────────────────────────────────────── */
+:root {
+  --bg:          #050b14;
+  --bg-2:        #07111e;
+  --surface:     rgba(8,22,38,.92);
+  --surface-2:   rgba(10,28,47,.88);
+  --surface-3:   rgba(12,32,52,.75);
+  --border:      rgba(80,190,230,.14);
+  --border-hi:   rgba(100,240,255,.30);
+  --cyan:        #5de8ff;
+  --cyan-dim:    rgba(93,232,255,.18);
+  --blue:        #1fa8e0;
+  --violet:      #a78bff;
+  --green:       #72ffc8;
+  --amber:       #ffbd65;
+  --red:         #ff6b7a;
+  --text:        #e8f5ff;
+  --text-soft:   #8fb0c8;
+  --text-dim:    #5a7a90;
+  --focus:       rgba(93,232,255,.28);
+  --radius:      12px;
+  --radius-sm:   7px;
+  --shadow:      0 20px 60px rgba(0,0,0,.5);
+  --shadow-glow: 0 0 40px rgba(30,168,224,.12);
+  --transition:  .18s cubic-bezier(.4,0,.2,1);
+}
+
+/* ─── RESET & BASE ────────────────────────────────────────────────── */
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  height: 100vh;
+}
+::selection { background: rgba(93,232,255,.25); color: #fff; }
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+/* ─── SCROLLBAR ───────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(80,180,220,.22); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(80,180,220,.40); }
+* { scrollbar-width: thin; scrollbar-color: rgba(80,180,220,.22) transparent; }
+
+/* ─── TYPOGRAPHY ──────────────────────────────────────────────────── */
+h1, h2, h3 { font-family: 'Orbitron', sans-serif; letter-spacing: .04em; }
+code, .mono { font-family: 'JetBrains Mono', monospace; font-size: .88em; }
+
+/* ─── BACKGROUND AMBIENCE ─────────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 48%, rgba(30,120,180,.09), transparent 55%),
+    radial-gradient(ellipse 30% 25% at 22% 80%, rgba(167,139,255,.04), transparent 45%);
+}
+
+/* ─── APP SHELL ───────────────────────────────────────────────────── */
+#app {
+  position: fixed; inset: 0; z-index: 1;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+
+/* ─── HEADER ──────────────────────────────────────────────────────── */
+#header {
+  flex-shrink: 0;
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 20px;
+  background: rgba(5,14,26,.96);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(20px);
+  z-index: 50;
+}
+.header-brand {
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none;
+}
+.header-logo {
+  width: 34px; height: 34px;
+  background: linear-gradient(135deg, var(--cyan), var(--blue));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px; font-weight: 700;
+  color: #03131d;
+  flex-shrink: 0;
+  box-shadow: 0 0 18px rgba(93,232,255,.25);
+}
+.header-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 16px; font-weight: 700;
+  letter-spacing: .08em;
+  color: var(--text);
+  white-space: nowrap;
+}
+.header-title span {
+  font-size: .6em;
+  color: var(--cyan);
+  display: block;
+  letter-spacing: .12em;
+  font-weight: 400;
+  margin-top: -2px;
+}
+.header-nav {
+  display: flex; gap: 6px;
+  margin-left: 8px;
+}
+.nav-btn {
+  padding: 8px 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-soft);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: .08em;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.nav-btn:hover {
+  background: rgba(93,232,255,.08);
+  border-color: var(--border-hi);
+  color: var(--text);
+}
+.nav-btn.active {
+  background: linear-gradient(135deg, rgba(93,232,255,.2), rgba(31,168,224,.15));
+  border-color: rgba(93,232,255,.5);
+  color: var(--cyan);
+  box-shadow: 0 0 16px rgba(93,232,255,.12);
+}
+.header-spacer { flex: 1; }
+.status-badge {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 12px;
+  border-radius: 99px;
+  border: 1px solid rgba(114,255,200,.22);
+  background: rgba(6,37,30,.7);
+  font-size: 10px;
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: .08em;
+  white-space: nowrap;
+  color: var(--green);
+  transition: var(--transition);
+}
+.status-badge.offline { border-color: rgba(255,107,122,.22); background: rgba(35,8,16,.7); color: var(--red); }
+.status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse-dot 2.5s ease-in-out infinite;
+}
+.status-badge.offline .status-dot { background: var(--red); box-shadow: 0 0 8px var(--red); animation: none; }
+@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.45} }
+
+/* ─── PAGE CONTAINER ──────────────────────────────────────────────── */
+#pages { flex: 1; overflow: hidden; position: relative; }
+.page { position: absolute; inset: 0; display: none; }
+.page.active { display: flex; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ANSHU PAGE
+═══════════════════════════════════════════════════════════════════ */
+#page-anshu {
+  flex-direction: row;
+  overflow: hidden;
+}
+
+/* ── LEFT SIDEBAR (capabilities & status) ────────────────────────── */
+#anshu-left {
+  width: 260px; flex-shrink: 0;
+  padding: 16px;
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 10px;
+  overflow-y: auto;
+  background: rgba(5,14,24,.5);
+}
+.sidebar-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 13px;
+}
+.sidebar-label {
+  font-size: 9px;
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: .12em;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+.capability-list { display: flex; flex-direction: column; gap: 5px; }
+.cap-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 11px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+  font-size: 12px; font-weight: 500;
+  transition: var(--transition);
+  text-align: left; width: 100%;
+}
+.cap-btn .cap-icon { font-size: 15px; flex-shrink: 0; }
+.cap-btn:hover { background: rgba(93,232,255,.07); color: var(--text); }
+.cap-btn.active {
+  background: rgba(93,232,255,.12);
+  border-color: rgba(93,232,255,.25);
+  color: var(--cyan);
+}
+.sys-metric { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; margin: 5px 0; gap: 6px; }
+.sys-metric .key { color: var(--text-soft); flex-shrink: 0; }
+.sys-metric .val { color: var(--cyan); font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 10px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px; }
+
+/* ── CENTER WORKSPACE ────────────────────────────────────────────── */
+#anshu-center {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+  padding: 20px 16px;
+  min-width: 0;
+}
+
+/* ── ORB ─────────────────────────────────────────────────────────── */
+#orb-wrap {
+  position: relative;
+  width: min(220px, 28vw);
+  height: min(220px, 28vw);
+  flex-shrink: 0;
+  margin-bottom: 16px;
+  cursor: pointer;
+}
+#orb-wrap:hover #orb-core { filter: brightness(1.1); }
+
+/* Outer glow halo */
+#orb-halo {
+  position: absolute; inset: -28%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center,
+    rgba(93,232,255,.09) 0%,
+    rgba(31,168,224,.04) 40%,
+    transparent 70%);
+  pointer-events: none;
+  animation: halo-breathe 4s ease-in-out infinite;
+}
+@keyframes halo-breathe {
+  0%,100%{ opacity:.7; transform:scale(1); }
+  50%{ opacity:1; transform:scale(1.06); }
+}
+
+/* Orbit rings */
+.orb-ring {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(93,232,255,.15);
+  animation: ring-orbit 22s linear infinite;
+  pointer-events: none;
+}
+.orb-ring::before {
+  content: '';
+  position: absolute;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--cyan);
+  top: -3px; left: 50%;
+  box-shadow: 0 0 10px var(--cyan), 0 0 20px rgba(93,232,255,.6);
+}
+.orb-ring.r2 {
+  inset: 12%;
+  border-style: dashed;
+  border-color: rgba(167,139,255,.12);
+  animation-duration: 35s; animation-direction: reverse;
+}
+.orb-ring.r2::before { background: var(--violet); box-shadow: 0 0 10px var(--violet), 0 0 20px rgba(167,139,255,.5); }
+.orb-ring.r3 {
+  inset: 22%;
+  border-color: rgba(93,232,255,.20);
+  animation-duration: 16s;
+  border-width: 1.5px;
+}
+.orb-ring.r3::before { width:4px; height:4px; top:-2px; }
+@keyframes ring-orbit { to { transform: rotate(360deg); } }
+
+/* Core sphere */
+#orb-core {
+  position: absolute;
+  inset: 24%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 35%,
+    #e8feff 0%,
+    #9bf4ff 10%,
+    #37d0f4 26%,
+    #0f80c8 44%,
+    #083464 62%,
+    rgba(4,14,38,.2) 72%,
+    transparent 78%);
+  box-shadow:
+    0 0 30px rgba(30,200,240,.7),
+    0 0 80px rgba(30,150,220,.35),
+    inset 0 0 30px rgba(180,250,255,.12);
+  animation: core-breathe 4s ease-in-out infinite;
+  transition: box-shadow .5s, filter .3s;
+}
+@keyframes core-breathe {
+  0%,100%{ transform:scale(.97); filter:brightness(.95); }
+  50%{ transform:scale(1.03); filter:brightness(1.12); }
+}
+
+/* State: LISTENING */
+#orb-wrap.state-listening #orb-core {
+  animation: core-listen 1.4s ease-in-out infinite;
+  box-shadow:
+    0 0 40px rgba(93,232,255,.9),
+    0 0 100px rgba(93,232,255,.4),
+    inset 0 0 35px rgba(200,255,255,.18);
+}
+@keyframes core-listen {
+  0%,100%{ transform:scale(.98); filter:brightness(1.05); }
+  50%{ transform:scale(1.06); filter:brightness(1.3); }
+}
+#orb-wrap.state-listening .orb-ring { animation-duration: 8s; }
+
+/* State: PROCESSING */
+#orb-wrap.state-processing #orb-core {
+  animation: core-process 1.2s linear infinite;
+  background: radial-gradient(circle at 38% 35%,
+    #fffde8 0%, #ffec9b 10%, #f4c537 26%,
+    #c87a08 44%, #5c3200 62%, transparent 78%);
+  box-shadow:
+    0 0 30px rgba(255,200,50,.6),
+    0 0 70px rgba(255,150,20,.3),
+    inset 0 0 25px rgba(255,240,160,.15);
+}
+@keyframes core-process {
+  0%{ filter: hue-rotate(0deg) brightness(1); }
+  50%{ filter: hue-rotate(20deg) brightness(1.2); }
+  100%{ filter: hue-rotate(0deg) brightness(1); }
+}
+#orb-wrap.state-processing .orb-ring { animation-duration: 5s; border-color: rgba(255,200,50,.2); }
+#orb-wrap.state-processing .orb-ring::before { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+
+/* State: SPEAKING */
+#orb-wrap.state-speaking #orb-core {
+  animation: core-speak 0.6s ease-in-out infinite alternate;
+  box-shadow:
+    0 0 35px rgba(114,255,200,.75),
+    0 0 90px rgba(114,255,200,.3),
+    inset 0 0 30px rgba(200,255,240,.15);
+}
+@keyframes core-speak {
+  from{ transform:scale(.96); filter:brightness(.95); }
+  to{ transform:scale(1.07); filter:brightness(1.25); }
+}
+#orb-wrap.state-speaking .orb-ring { border-color: rgba(114,255,200,.22); }
+#orb-wrap.state-speaking .orb-ring::before { background: var(--green); box-shadow: 0 0 10px var(--green); }
+
+/* State: ERROR */
+#orb-wrap.state-error #orb-core {
+  background: radial-gradient(circle at 38% 35%,
+    #ffe8e8 0%, #ffb4be 10%, #f45365 26%,
+    #b8203a 44%, #540a18 62%, transparent 78%);
+  box-shadow:
+    0 0 30px rgba(255,100,120,.6),
+    0 0 70px rgba(255,80,100,.25);
+  animation: core-error 2s ease-in-out infinite;
+}
+@keyframes core-error {
+  0%,100%{ transform:scale(1); filter:brightness(1); }
+  50%{ transform:scale(.98); filter:brightness(.85); }
+}
+
+/* Orb status label */
+#orb-status {
+  margin-top: 14px;
+  font-size: 11px;
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: .12em;
+  color: var(--text-dim);
+  text-align: center;
+  min-height: 18px;
+  transition: color .3s;
+}
+#orb-status.listening { color: var(--cyan); }
+#orb-status.processing { color: var(--amber); }
+#orb-status.speaking { color: var(--green); }
+#orb-status.error { color: var(--red); }
+
+/* ── CONVERSATION AREA ───────────────────────────────────────────── */
+#conversation {
+  flex: 1;
+  width: 100%;
+  max-width: 680px;
+  overflow-y: auto;
+  padding: 8px 4px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+#conversation:empty::before {
+  content: 'Ask ANSHU anything — or activate voice to speak…';
+  color: var(--text-dim);
+  font-size: 13px;
+  text-align: center;
+  padding: 24px;
+  opacity: .7;
+}
+.msg {
+  display: flex;
+  gap: 10px;
+  max-width: 90%;
+  animation: msg-in .25s ease;
+}
+@keyframes msg-in {
+  from{ opacity:0; transform:translateY(6px); }
+  to{ opacity:1; transform:translateY(0); }
+}
+.msg.user { align-self: flex-end; flex-direction: row-reverse; }
+.msg-avatar {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+}
+.msg.user .msg-avatar { background: linear-gradient(135deg, var(--cyan), var(--blue)); color: #03131d; }
+.msg.anshu .msg-avatar { background: rgba(167,139,255,.2); color: var(--violet); border: 1px solid rgba(167,139,255,.3); font-family: 'Orbitron', sans-serif; font-size: 9px; }
+.msg-bubble {
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  font-size: 13.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+.msg.user .msg-bubble {
+  background: linear-gradient(135deg, rgba(93,232,255,.18), rgba(31,168,224,.14));
+  border: 1px solid rgba(93,232,255,.2);
+  color: var(--text);
+  border-bottom-right-radius: 4px;
+}
+.msg.anshu .msg-bubble {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-bottom-left-radius: 4px;
+}
+.msg.error .msg-bubble {
+  background: rgba(255,107,122,.08);
+  border: 1px solid rgba(255,107,122,.25);
+  color: var(--red);
+}
+.msg-meta {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 4px;
+  padding-left: 4px;
+}
+
+/* ── CAPABILITY PANELS (camera/vision/memory overlays) ───────────── */
+#cap-panel {
+  width: 100%;
+  max-width: 680px;
+  flex-shrink: 0;
+}
+.cap-area {
+  display: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 14px;
+  margin-bottom: 10px;
+  animation: msg-in .2s ease;
+}
+.cap-area.open { display: block; }
+.cap-area-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.cap-area-title { font-family: 'Orbitron', sans-serif; font-size: 11px; letter-spacing: .08em; color: var(--cyan); }
+.cap-close { background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 16px; padding: 2px 6px; border-radius: 4px; transition: var(--transition); }
+.cap-close:hover { color: var(--red); background: rgba(255,107,122,.08); }
+
+/* Vision panel */
+#vision-stage { position: relative; border-radius: 8px; overflow: hidden; background: #020812; margin-bottom: 10px; }
+#visionVideo { display: block; width: 100%; max-height: 220px; object-fit: contain; }
+#visionOverlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+#vision-objects { font-size: 12px; color: var(--cyan); line-height: 1.7; min-height: 20px; }
+.vision-actions { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 8px; }
+.vision-actions input {
+  flex: 1; min-width: 160px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: rgba(5,15,27,.9);
+  color: var(--text);
+  font-size: 13px;
+  transition: var(--transition);
+}
+.vision-actions input:focus { border-color: var(--cyan); outline: none; box-shadow: 0 0 0 3px var(--focus); }
+
+/* Memory/Reminders panel */
+.mem-panel-list { max-height: 180px; overflow-y: auto; margin-top: 8px; }
+.mem-item { display: flex; gap: 8px; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+.mem-item:last-child { border-bottom: none; }
+.mem-item-text { flex: 1; color: var(--text); line-height: 1.5; }
+.mem-item-meta { font-size: 10px; color: var(--text-dim); }
+
+/* ── COMPOSER ─────────────────────────────────────────────────────── */
+#composer-wrap {
+  width: 100%;
+  max-width: 680px;
+  flex-shrink: 0;
+  padding: 10px 0 4px;
+}
+#composer {
+  display: flex; gap: 8px; align-items: flex-end;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 10px 10px 10px 14px;
+  transition: border-color .2s, box-shadow .2s;
+}
+#composer:focus-within {
+  border-color: rgba(93,232,255,.35);
+  box-shadow: 0 0 0 3px rgba(93,232,255,.08), var(--shadow-glow);
+}
+#chat-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  resize: none;
+  outline: none;
+  line-height: 1.5;
+  max-height: 120px;
+  min-height: 22px;
+}
+#chat-input::placeholder { color: var(--text-dim); }
+.composer-actions { display: flex; gap: 6px; align-items: flex-end; flex-shrink: 0; }
+.icon-btn {
+  width: 36px; height: 36px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+.icon-btn:hover { background: rgba(93,232,255,.09); border-color: var(--border-hi); color: var(--cyan); }
+.icon-btn.active { background: rgba(93,232,255,.18); border-color: rgba(93,232,255,.45); color: var(--cyan); }
+.icon-btn.listening { background: rgba(93,232,255,.22); border-color: rgba(93,232,255,.6); color: var(--cyan); animation: mic-pulse .9s ease-in-out infinite; }
+.icon-btn.danger { border-color: rgba(255,107,122,.3); color: var(--red); }
+.icon-btn.danger:hover { background: rgba(255,107,122,.1); }
+@keyframes mic-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(93,232,255,.35)} 50%{box-shadow:0 0 0 6px rgba(93,232,255,0)} }
+#send-btn {
+  width: 36px; height: 36px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: linear-gradient(135deg, var(--cyan), var(--blue));
+  color: #03131d;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+#send-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
+#send-btn:active { transform: translateY(0); }
+#send-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; filter: none; }
+.composer-hint {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-align: center;
+  margin-top: 6px;
+  letter-spacing: .04em;
+}
+
+/* ── RIGHT SIDEBAR (voice status / system) ───────────────────────── */
+#anshu-right {
+  width: 248px; flex: 0 0 248px;
+  min-height: 0;
+  padding: 12px;
+  border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 10px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(93,232,255,.35) rgba(5,14,24,.25);
+  background: rgba(5,14,24,.5);
+}
+#anshu-right::-webkit-scrollbar { width: 8px; }
+#anshu-right::-webkit-scrollbar-track { background: rgba(5,14,24,.25); border-radius: 8px; }
+#anshu-right::-webkit-scrollbar-thumb { background: rgba(93,232,255,.35); border-radius: 8px; }
+#anshu-right > .info-card { flex: 0 0 auto; min-width: 0; }
+.info-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 12px;
+  min-width: 0;
+}
+.info-card-title { font-family: 'Orbitron', sans-serif; font-size: 9px; letter-spacing: .12em; color: var(--text-dim); margin-bottom: 10px; }
+
+.diagnostics-card { display:flex; flex-direction:column; gap:8px; max-height:min(440px,58vh); overflow:hidden; }
+.diagnostics-card .info-card-title { flex:0 0 auto; line-height:1.5; overflow-wrap:anywhere; margin-bottom:0; }
+.diagnostics-intro,.diagnostics-privacy { margin:0; }
+.diagnostics-run { width:100%; min-height:36px; flex:0 0 auto; }
+.diagnostics-scroll { min-height:54px; max-height:230px; overflow-y:auto; overflow-x:hidden; padding:8px 9px; border:1px solid rgba(93,232,255,.12); border-radius:var(--radius-sm); background:rgba(2,10,18,.38); overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:rgba(93,232,255,.35) rgba(5,14,24,.25); }
+.diagnostics-scroll::-webkit-scrollbar { width:7px; }
+.diagnostics-scroll::-webkit-scrollbar-thumb { background:rgba(93,232,255,.35); border-radius:8px; }
+#diagnostics-results { display:grid; gap:7px; min-width:0; }
+#diagnostics-results > div { min-width:0; overflow-wrap:anywhere; }
+@media (max-height:760px) { .diagnostics-card { max-height:52vh; } .diagnostics-scroll { max-height:170px; } }
+@media (max-width:1100px) { #anshu-right { width:220px; flex-basis:220px; } }
+
+.voice-indicator { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.voice-state { font-size: 12px; font-weight: 500; color: var(--text-soft); }
+.voice-state.on { color: var(--cyan); }
+#transcript-display {
+  font-size: 12px;
+  color: var(--cyan);
+  line-height: 1.5;
+  min-height: 32px;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(93,232,255,.05);
+  border: 1px solid rgba(93,232,255,.12);
+  overflow-wrap: anywhere;
+}
+.voice-note-txt { font-size: 11px; color: var(--text-dim); line-height: 1.5; margin-top: 6px; }
+
+/* ─── DAILY BRIEF CARD ────────────────────────────────────────────── */
+#brief-content { font-size: 11.5px; line-height: 1.7; color: var(--text-soft); white-space: pre-wrap; overflow-wrap: anywhere; }
+/* Brief row values constrained */
+.brief-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; margin: 3px 0; gap: 6px; }
+.brief-row .bkey { color: var(--text-dim); font-size: 10px; flex-shrink: 0; }
+.brief-row .bval { color: var(--cyan); font-weight: 600; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100px; }
+.brief-section { margin-top: 8px; }
+.brief-section-title { font-size: 9px; letter-spacing: .1em; color: var(--text-dim); font-family: 'Orbitron', sans-serif; margin-bottom: 4px; }
+.brief-item { font-size: 11px; color: var(--text-soft); padding: 2px 0; border-bottom: 1px solid var(--border); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ROBOTIC LAB PAGE
+═══════════════════════════════════════════════════════════════════ */
+#page-lab { flex-direction: column; overflow: hidden; }
+#lab-header {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(5,14,24,.8);
+  display: flex; align-items: center; gap: 12px;
+  z-index: 10;
+}
+.lab-title { font-family: 'Orbitron', sans-serif; font-size: 13px; letter-spacing: .1em; color: var(--text); }
+.lab-title span { color: var(--cyan); }
+.lab-status-badges { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+.lab-badge {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px; letter-spacing: .08em;
+  padding: 5px 10px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.lab-badge.online { border-color: rgba(114,255,200,.3); color: var(--green); }
+.lab-badge.moving { border-color: rgba(93,232,255,.3); color: var(--cyan); animation: pulse-dot 1s infinite; }
+#lab-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+#lab-canvas-wrap {
+  flex: 1; position: relative;
+  background: var(--bg);
+  overflow: hidden;
+}
+#lab-canvas-wrap canvas { position: absolute; inset: 0; display: block; }
+#lab-canvas-hint {
+  position: absolute;
+  bottom: 12px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: var(--text-dim);
+  pointer-events: none;
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: .08em;
+}
+#lab-panels {
+  width: 268px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 0;
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  background: rgba(5,14,24,.8);
+}
+.lab-panel {
+  padding: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.phase20-safety-panel {
+  background: linear-gradient(145deg, rgba(93,232,255,.09), rgba(5,14,24,.88));
+  border-bottom: 1px solid rgba(93,232,255,.28);
+}
+.phase20-safety-note {
+  color: var(--text-dim);
+  font-size: 9px;
+  line-height: 1.5;
+  letter-spacing: .05em;
+  margin: -3px 0 9px;
+}
+.phase20-safety-button {
+  width: 100%;
+  min-height: 34px;
+  font-size: 9px;
+  margin: 0 0 6px;
+}
+.phase20-safety-panel .metric-row { margin: 9px 0; }
+.lab-panel-title { font-family: 'Orbitron', sans-serif; font-size: 9px; letter-spacing: .12em; color: var(--text-dim); margin-bottom: 10px; }
+.metric-row { display: flex; justify-content: space-between; align-items: center; margin: 7px 0; font-size: 12px; }
+.metric-row .mk { color: var(--text-soft); }
+.metric-row .mv { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--cyan); font-weight: 600; }
+.metric-row .mv.warn { color: var(--amber); }
+.metric-row .mv.ok { color: var(--green); }
+.metric-row .mv.danger { color: var(--red); }
+.batt-bar { height: 4px; border-radius: 99px; background: rgba(255,255,255,.06); margin: 4px 0 10px; overflow: hidden; }
+.batt-bar-fill { height: 100%; background: linear-gradient(90deg, var(--green), var(--cyan)); border-radius: 99px; transition: width .3s; box-shadow: 0 0 8px rgba(114,255,200,.4); }
+.lab-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.lab-btn {
+  padding: 9px 7px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-soft);
+  cursor: pointer;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 8.5px; letter-spacing: .06em;
+  transition: var(--transition);
+  text-align: center;
+  white-space: nowrap;
+}
+.lab-btn:hover { background: rgba(93,232,255,.1); border-color: rgba(93,232,255,.3); color: var(--cyan); }
+.lab-btn.primary { background: linear-gradient(135deg, rgba(93,232,255,.2), rgba(31,168,224,.15)); border-color: rgba(93,232,255,.4); color: var(--cyan); }
+.lab-btn.danger-btn { background: rgba(255,107,122,.08); border-color: rgba(255,107,122,.3); color: var(--red); }
+.lab-btn.danger-btn:hover { background: rgba(255,107,122,.15); }
+.lab-btn.full { grid-column: 1/-1; }
+.dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 40px);
+  grid-template-rows: repeat(3, 40px);
+  gap: 4px;
+  justify-content: center;
+  margin: 8px 0;
+}
+.dpad-btn {
+  width: 40px; height: 40px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-soft);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  transition: var(--transition);
+  user-select: none;
+}
+.dpad-btn:hover, .dpad-btn:active { background: rgba(93,232,255,.15); border-color: rgba(93,232,255,.4); color: var(--cyan); }
+.dpad-blank { visibility: hidden; }
+
+/* Radar */
+#lab-radar {
+  width: 100%; aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: #04101c;
+  display: block;
+}
+.parts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.part-chip {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 8px;
+  background: rgba(5,18,30,.8);
+}
+.part-chip .pname { font-family: 'Orbitron', sans-serif; font-size: 8px; color: var(--cyan); letter-spacing: .08em; margin-bottom: 2px; }
+.part-chip .pdesc { font-size: 10px; color: var(--text-dim); }
+.console-output {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-soft);
+  min-height: 60px;
+  max-height: 110px;
+  overflow-y: auto;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.console-line { color: var(--cyan); }
+.console-line.warn { color: var(--amber); }
+.console-line.err { color: var(--red); }
+.console-line.ok { color: var(--green); }
+
+/* ─── SHARED BUTTON BASE ──────────────────────────────────────────── */
+button { cursor: pointer; font-family: 'Inter', sans-serif; }
+.btn {
+  padding: 9px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(93,232,255,.4);
+  background: linear-gradient(135deg, rgba(93,232,255,.2), rgba(31,168,224,.15));
+  color: var(--cyan);
+  font-size: 11px; font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.btn:hover { background: linear-gradient(135deg, rgba(93,232,255,.3), rgba(31,168,224,.25)); box-shadow: 0 0 16px rgba(93,232,255,.15); }
+.btn.secondary { background: rgba(8,25,40,.9); border-color: var(--border); color: var(--text-soft); }
+.btn.secondary:hover { border-color: var(--border-hi); color: var(--text); }
+.btn.danger { background: rgba(255,107,122,.08); border-color: rgba(255,107,122,.3); color: var(--red); }
+.btn.danger:hover { background: rgba(255,107,122,.15); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn-sm { padding: 6px 11px; font-size: 10px; border-radius: 5px; }
+.btn-row { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 8px; }
+
+/* ─── INPUT / TEXTAREA SHARED ─────────────────────────────────────── */
+.field {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: rgba(5,15,27,.9);
+  color: var(--text);
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  transition: var(--transition);
+  display: block;
+  margin: 5px 0;
+}
+.field:focus { border-color: var(--cyan); outline: none; box-shadow: 0 0 0 3px var(--focus); background: rgba(5,18,32,.95); }
+.field::placeholder { color: var(--text-dim); }
+textarea.field { resize: vertical; min-height: 70px; line-height: 1.5; }
+
+/* ─── HAND CURSOR ─────────────────────────────────────────────────── */
+#handCursor {
+  position: fixed; z-index: 9999;
+  left: 50%; top: 50%;
+  width: 28px; height: 28px;
+  border: 2px solid var(--cyan);
+  border-radius: 50%;
+  color: var(--cyan);
+  text-align: center; line-height: 24px;
+  pointer-events: none;
+  display: none;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 18px rgba(93,232,255,.5);
+  background: rgba(4,20,34,.75);
+  font-size: 12px;
+}
+#handCursor.pinch {
+  background: rgba(114,255,200,.85);
+  color: #003020;
+  box-shadow: 0 0 28px rgba(114,255,200,.7);
+}
+
+/* ─── MODAL OVERLAY ───────────────────────────────────────────────── */
+#modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(3,8,18,.85);
+  backdrop-filter: blur(8px);
+  display: none; align-items: center; justify-content: center;
+}
+#modal-overlay.open { display: flex; }
+.modal-box {
+  background: linear-gradient(145deg, rgba(8,22,38,.98), rgba(5,14,24,.98));
+  border: 1px solid var(--border-hi);
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 480px; width: 90%;
+  box-shadow: var(--shadow);
+}
+.modal-title { font-family: 'Orbitron', sans-serif; font-size: 15px; color: var(--text); margin-bottom: 8px; }
+.modal-body { font-size: 13px; color: var(--text-soft); line-height: 1.6; margin-bottom: 20px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* ─── TOAST NOTIFICATIONS ─────────────────────────────────────────── */
+#toast-zone {
+  position: fixed; bottom: 20px; right: 20px; z-index: 200;
+  display: flex; flex-direction: column; gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 12.5px;
+  color: var(--text);
+  box-shadow: var(--shadow);
+  animation: toast-in .25s ease;
+  pointer-events: auto;
+  max-width: 280px;
+}
+.toast.ok { border-color: rgba(114,255,200,.3); }
+.toast.warn { border-color: rgba(255,189,101,.3); }
+.toast.err { border-color: rgba(255,107,122,.3); color: var(--red); }
+@keyframes toast-in { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+
+/* ─── RESPONSIVE ──────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  #anshu-left { width: 210px; }
+  #anshu-right { width: 200px; }
+}
+@media (max-width: 860px) {
+  #anshu-left, #anshu-right { display: none; }
+  #page-anshu { flex-direction: column; }
+  #anshu-center { padding: 14px 10px; }
+  #orb-wrap { width: min(160px, 40vw); height: min(160px, 40vw); }
+  #lab-panels { width: 220px; }
+}
+@media (max-width: 640px) {
+  #header { padding: 10px 12px; }
+  .header-title span { display: none; }
+  .nav-btn { padding: 7px 12px; font-size: 9px; }
+  .status-badge { display: none; }
+  #lab-body { flex-direction: column; }
+  #lab-panels { width: 100%; max-height: 260px; flex-direction: row; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; }
+  .lab-panel { min-width: 210px; border-bottom: none; border-right: 1px solid var(--border); }
+  #lab-canvas-wrap { min-height: 200px; }
+  body { overflow: auto; }
+  #pages { overflow: auto; }
+  .page { position: relative; }
+  #page-lab { height: auto; min-height: 100vh; }
+}
+
+/* ─── REDUCED MOTION ──────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,*::before,*::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* Phase 14 desktop command palette */
+.desktop-command-card .field{width:100%;box-sizing:border-box}
+.desktop-command-card #desktopCommandRun{flex:0 0 auto}
+.desktop-command-card:focus-within{border-color:var(--accent,#52e4ff)}
+@media(max-width:600px){.desktop-command-card>div:nth-child(3){display:flex;flex-direction:column}.desktop-command-card #desktopCommandRun{width:100%!important}}
+
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"}}</script>
+</head>
+<body>
+
+<!-- Hand cursor (global) -->
+<div id="handCursor" aria-hidden="true">✦</div>
+
+<!-- Toast zone -->
+<div id="toast-zone" role="status" aria-live="polite"></div>
+
+<!-- Modal (for app launch confirmation, etc.) -->
+<div id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-title">Confirm Action</div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-actions" id="modal-actions"></div>
+  </div>
+</div>
+
+<!-- ── APP SHELL ─────────────────────────────────────────────── -->
+<div id="app">
+
+  <!-- HEADER -->
+  <header id="header">
+    <div class="header-brand">
+      <div class="header-logo">JV</div>
+      <div class="header-title">
+        ANSHU
+        <span>PHASE 13 · PROACTIVE</span>
+      </div>
+    </div>
+    <nav class="header-nav" aria-label="Primary navigation">
+      <button class="nav-btn active" id="nav-anshu" aria-current="page">ANSHU</button>
+      <button class="nav-btn" id="nav-lab">ROBOTIC LAB</button>
+    </nav>
+    <div class="header-spacer"></div>
+    <div class="status-badge" id="ai-badge" title="Ollama AI connection status">
+      <div class="status-dot"></div>
+      <span id="ai-badge-text">CHECKING…</span>
+    </div>
+  </header>
+
+  <!-- PAGES -->
+  <div id="pages">
+
+    <!-- ═══════════════════════════════════════════════
+         PAGE: ANSHU
+    ═══════════════════════════════════════════════ -->
+    <section class="page active" id="page-anshu" aria-label="ANSHU AI assistant workspace">
+
+      <!-- LEFT SIDEBAR -->
+      <aside id="anshu-left" aria-label="AI capabilities and system info">
+        <!-- Capabilities -->
+        <div class="sidebar-section">
+          <div class="sidebar-label">CAPABILITIES</div>
+          <div class="capability-list">
+            <button class="cap-btn active" id="cap-chat" title="Text and voice chat">
+              <span class="cap-icon">💬</span> AI Conversation
+            </button>
+            <button class="cap-btn" id="cap-vision" title="Camera object detection and image analysis">
+              <span class="cap-icon">👁</span> Vision &amp; Detection
+            </button>
+            <button class="cap-btn" id="cap-memory" title="Personal memory and reminders">
+              <span class="cap-icon">🧠</span> Memory &amp; Reminders
+            </button>
+            <button class="cap-btn" id="cap-desktop" title="Local desktop assistant tools">
+              <span class="cap-icon">🖥</span> Desktop Tools
+            </button>
+            <button class="cap-btn" id="cap-hand" title="Hand gesture control">
+              <span class="cap-icon">✋</span> Hand Control
+            </button>
+          </div>
+        </div>
+
+        <!-- System status -->
+        <div class="sidebar-section">
+          <div class="sidebar-label">SYSTEM STATUS</div>
+          <div id="sys-status-list">
+            <div class="sys-metric"><span class="key">AI MODEL</span><span class="val" id="ss-model">—</span></div>
+            <div class="sys-metric"><span class="key">MEMORY</span><span class="val" id="ss-memory">—</span></div>
+            <div class="sys-metric"><span class="key">DISK</span><span class="val" id="ss-disk">—</span></div>
+            <div class="sys-metric"><span class="key">BATTERY</span><span class="val" id="ss-battery">—</span></div>
+            <div class="sys-metric"><span class="key">OLLAMA</span><span class="val" id="ss-ollama">—</span></div>
+          </div>
+          <button class="btn secondary btn-sm" id="runDiagnostics" style="width:100%;margin-top:8px">Run System Check</button>
+          <div id="diagnosticsResults" aria-live="polite" style="display:none;margin-top:8px;font-size:11px;line-height:1.6"></div>
+        </div>
+
+        <!-- Daily brief -->
+        <div class="sidebar-section">
+          <div class="sidebar-label">TODAY'S BRIEF</div>
+          <div id="brief-content">Loading…</div>
+          <div class="btn-row">
+            <button class="btn secondary btn-sm" id="brief-refresh">↻ Refresh</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- CENTER WORKSPACE -->
+      <main id="anshu-center">
+
+        <!-- ORB -->
+        <div id="orb-wrap" role="button" tabindex="0" aria-label="ANSHU AI orb — click to activate voice" title="Click to toggle voice">
+          <div id="orb-halo" aria-hidden="true"></div>
+          <div class="orb-ring" aria-hidden="true"></div>
+          <div class="orb-ring r2" aria-hidden="true"></div>
+          <div class="orb-ring r3" aria-hidden="true"></div>
+          <div id="orb-core" aria-hidden="true"></div>
+        </div>
+        <div id="orb-status" aria-live="polite">IDLE · READY</div>
+
+        <!-- Capability panels -->
+        <div id="cap-panel">
+
+          <!-- Vision panel -->
+          <div class="cap-area" id="vision-area">
+            <div class="cap-area-header">
+              <span class="cap-area-title">👁 VISION &amp; OBJECT DETECTION</span>
+              <button class="cap-close" id="vision-area-close" title="Close vision panel" aria-label="Close vision">✕</button>
+            </div>
+            <p style="font-size:12px;color:var(--text-soft);margin-bottom:10px">Local in-browser COCO-SSD detection. Camera frames stay on this device.</p>
+            <div id="vision-stage">
+              <video id="visionVideo" autoplay muted playsinline></video>
+              <canvas id="visionOverlay"></canvas>
+            </div>
+            <div id="vision-objects" aria-live="polite">No objects detected yet.</div>
+            <div class="vision-actions">
+              <button class="btn btn-sm" id="vision-start-btn">▶ Start Camera</button>
+              <button class="btn secondary btn-sm" id="vision-stop-btn">■ Stop</button>
+              <button class="btn secondary btn-sm" id="vision-ask-btn">Ask AI about labels</button>
+              <button class="btn btn-sm" id="vision-analyze-btn">Analyze Image (AI)</button>
+              <input class="vision-actions" type="text" id="visionQuestion" placeholder="What should ANSHU look for?" style="min-width:180px;flex:1">
+            </div>
+          </div>
+
+          <!-- Memory panel -->
+          <div class="cap-area" id="memory-area">
+            <div class="cap-area-header">
+              <span class="cap-area-title">🧠 MEMORY &amp; REMINDERS</span>
+              <button class="cap-close" id="memory-area-close" aria-label="Close memory panel">✕</button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div>
+                <div class="sidebar-label" style="margin-bottom:6px">PERSONAL MEMORY</div>
+                <textarea class="field" id="memoryText" placeholder="Save a preference or fact for ANSHU…" style="min-height:56px;font-size:12px"></textarea>
+                <button class="btn btn-sm" id="memorySave">Save to Memory</button>
+                <label style="display:flex;align-items:center;gap:8px;margin:9px 0;font-size:12px;color:var(--text-dim)"><input id="memoryUseToggle" type="checkbox" checked> Use relevant saved memories in AI replies</label>
+                <div id="conversationSummaryStatus" style="font-size:11px;color:var(--text-dim);margin:4px 0 8px">Conversation context summary: building locally as chats grow.</div>
+                <input class="field" id="memorySearch" type="search" placeholder="Search saved memories…" aria-label="Search saved memories" style="font-size:12px;margin-top:8px">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:8px 0">
+                  <span class="mem-item-meta" id="memoryCount">0 saved memories</span>
+                  <button class="btn secondary btn-sm" id="memoryClearAll" type="button">Clear all</button>
+                </div>
+                <div class="mem-panel-list" id="memoryList"><div style="color:var(--text-dim);font-size:12px">Loading…</div></div>
+              </div>
+              <div>
+                <div class="sidebar-label" style="margin-bottom:6px">REMINDERS</div>
+                <input class="field" type="text" id="reminderText" placeholder="What to remind you about?" style="font-size:12px">
+                <input class="field" type="datetime-local" id="reminderDue" style="font-size:12px">
+                <button class="btn btn-sm" id="reminderAdd">Add Reminder</button>
+                <div class="mem-panel-list" id="reminderList"><div style="color:var(--text-dim);font-size:12px">Loading…</div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Desktop tools panel -->
+          <div class="cap-area" id="desktop-area">
+            <div class="cap-area-header">
+              <span class="cap-area-title">🖥 DESKTOP TOOLS</span>
+              <button class="cap-close" id="desktop-area-close" aria-label="Close desktop panel">✕</button>
+            </div>
+            <div class="desktop-command-card agent-command-card" style="border:1px solid rgba(93,232,255,.32);background:linear-gradient(145deg,rgba(93,232,255,.08),var(--surface-2,rgba(10,24,39,.72)));border-radius:12px;padding:12px;margin:10px 0 14px">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                <div class="sidebar-label" style="margin-bottom:6px">COMPUTER CONTROL AGENT</div>
+                <span style="font-size:9px;color:var(--text-dim);letter-spacing:.08em">PHASE 24</span>
+              </div>
+              <div style="font-size:12px;color:var(--text-dim);line-height:1.5;margin-bottom:8px">Use voice commands such as “Hey ANSHU, open AgroMind in VS Code” or “Hey ANSHU, find Python files”. ANSHU prepares a plan for you to review and confirm. Cancel a pending plan by saying “cancel computer task”. No arbitrary terminal commands or screen clicking.</div>
+              <div style="display:flex;gap:8px;align-items:stretch;flex-wrap:wrap">
+                <input class="field" type="text" id="agentTaskInput" placeholder="e.g. Open github.com or find Python files" aria-label="Computer agent task" style="flex:1 1 220px;min-width:0">
+                <button class="btn btn-sm" id="agentPlanButton" style="width:auto;min-width:90px">Plan task</button>
+              </div>
+              <div id="agentPlanPreview" role="status" aria-live="polite" style="font-size:11px;color:var(--text-soft);line-height:1.6;margin-top:8px">No plan created yet. Website links are limited to HTTP(S); file searches stay inside allowed folders.</div>
+              <div id="agentOutcomeResults" style="font-size:11px;color:var(--text-soft);line-height:1.6;margin-top:6px"></div>
+            </div>
+            <div class="desktop-command-card" style="border:1px solid var(--border);background:var(--surface-2,rgba(10,24,39,.72));border-radius:12px;padding:12px;margin:10px 0 14px">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                <div class="sidebar-label" style="margin-bottom:6px">QUICK DESKTOP COMMAND</div>
+                <span style="font-size:9px;color:var(--text-dim);letter-spacing:.08em">PHASE 14.2</span>
+              </div>
+              <div style="font-size:12px;color:var(--text-dim);line-height:1.5;margin-bottom:8px">Try “open calculator”, “search files for resume”, “show memory”, or “open robotic lab”. App launches always ask for confirmation. Use Run System Check to diagnose local setup.</div>
+              <div style="display:flex;gap:8px;align-items:stretch;flex-wrap:wrap">
+                <input class="field" type="text" id="desktopCommandInput" placeholder="Type a desktop command…" aria-label="Desktop command" style="flex:1 1 220px;min-width:0">
+                <button class="btn btn-sm" id="desktopCommandRun" style="width:auto;min-width:90px">Run</button>
+              </div>
+              <div id="desktopCommandStatus" role="status" aria-live="polite" style="font-size:11px;color:var(--text-dim);margin-top:7px">Allowed: Notepad, Calculator, Paint, File Explorer, Task Manager, and scoped file search.</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div>
+                <div class="sidebar-label" style="margin-bottom:6px">APP LAUNCHER</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+                  <button class="btn secondary btn-sm" data-app="notepad">Notepad</button>
+                  <button class="btn secondary btn-sm" data-app="calculator">Calculator</button>
+                  <button class="btn secondary btn-sm" data-app="paint">Paint</button>
+                  <button class="btn secondary btn-sm" data-app="file explorer">File Explorer</button>
+                  <button class="btn secondary btn-sm" data-app="task manager" style="grid-column:1/-1">Task Manager</button>
+                </div>
+                <div id="desktop-app-status" style="font-size:11px;color:var(--text-dim);margin-top:8px">Select an app to launch.</div>
+              </div>
+              <div>
+                <div class="sidebar-label" style="margin-bottom:6px">SEARCH FILES</div>
+                <input class="field" type="text" id="fileQuery" placeholder="Search filename…" style="font-size:12px">
+                <button class="btn btn-sm" id="fileSearch">Search</button>
+                <div id="fileResults" style="font-size:11px;color:var(--text-soft);margin-top:6px;max-height:220px;overflow:auto">Search Desktop, Documents, Downloads.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hand control panel -->
+          <div class="cap-area" id="hand-area">
+            <div class="cap-area-header">
+              <span class="cap-area-title">✋ HAND GESTURE CONTROL</span>
+              <button class="cap-close" id="hand-area-close" aria-label="Close hand control panel">✕</button>
+            </div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start">
+              <div style="flex:0 0 auto">
+                <video id="handVideo" autoplay playsinline muted style="width:160px;aspect-ratio:4/3;border-radius:8px;border:1px solid var(--border);object-fit:cover;transform:scaleX(-1);background:#020812;display:block"></video>
+              </div>
+              <div style="flex:1;min-width:150px">
+                <div id="handStatus" style="font-size:12px;color:var(--text-soft);margin-bottom:8px;line-height:1.5">Hand control is off. Enable to use gesture navigation.</div>
+                <button class="btn secondary btn-sm" id="handToggle">Enable Hand Control</button>
+                <button class="btn secondary btn-sm" id="roverGestureToggle" style="margin-top:5px">Enable Rover Gesture Mode</button>
+                <div id="gestureModeStatus" style="font-size:10px;color:var(--green);margin-top:6px">Gestures: point to move · pinch to click · swipe to switch tabs</div>
+                <p style="font-size:10px;color:var(--text-dim);margin-top:5px;line-height:1.5">Frames are processed locally. Pinch thumb to index finger to click. Swipe left for AI, right for Lab.</p>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /#cap-panel -->
+
+        <!-- Conversation -->
+        <div id="conversation" aria-label="Conversation history" aria-live="polite"></div>
+
+        <!-- Composer -->
+        <div id="composer-wrap">
+          <div id="composer" role="search">
+            <textarea id="chat-input" rows="1" placeholder="Ask ANSHU anything…" aria-label="Message to ANSHU"></textarea>
+            <div class="composer-actions">
+              <button class="icon-btn" id="voice-btn" title="Toggle microphone" aria-label="Toggle microphone" aria-pressed="false">🎤</button>
+              <button class="icon-btn" id="cam-btn" title="Open vision / camera" aria-label="Open camera" aria-pressed="false">📷</button>
+              <button id="send-btn" title="Send message" aria-label="Send message">➤</button>
+            </div>
+          </div>
+          <div class="composer-hint">Enter to send · Shift+Enter for new line · Click orb or 🎤 for offline voice</div>
+        </div>
+
+      </main><!-- /#anshu-center -->
+
+      <!-- RIGHT SIDEBAR -->
+      <aside id="anshu-right" aria-label="Voice status and daily brief">
+        <!-- Voice status -->
+        <div class="info-card">
+          <div class="info-card-title">VOICE LINK</div>
+          <div class="voice-indicator">
+            <div class="status-dot" id="voice-dot" style="background:var(--text-dim);box-shadow:none"></div>
+            <span class="voice-state" id="voice-state-label">OFFLINE</span>
+          </div>
+          <div id="transcript-display" aria-live="polite">Awaiting voice input…</div>
+          <div class="btn-row" style="margin-top:8px">
+            <button class="btn secondary btn-sm" id="wake-word-btn">Hey ANSHU Mode</button>
+          </div>
+          <div class="btn-row" style="margin-top:8px">
+            <button class="btn primary btn-sm" id="offline-ptt-btn">OFFLINE PUSH-TO-TALK</button>
+            <button class="btn secondary btn-sm" id="offline-wake-btn">OFFLINE WAKE</button>
+          </div>
+          <div class="btn-row" style="margin-top:8px;align-items:center">
+            <span class="voice-note-txt" aria-label="Voice language">VOICE LANGUAGE: <strong>ENGLISH ONLY</strong></span>
+          </div>
+          <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+            <div class="info-card-title" style="margin-bottom:8px">VOICE CONTROL CENTER</div>
+            <label for="voice-sensitivity" style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-soft);margin:7px 0 4px">
+              <span>MICROPHONE SENSITIVITY</span><strong id="voice-sensitivity-value">Balanced</strong>
+            </label>
+            <input id="voice-sensitivity" type="range" min="1" max="3" step="1" value="2" style="width:100%;accent-color:var(--cyan)">
+            <label for="voice-silence" style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-soft);margin:10px 0 4px">
+              <span>END-OF-SPEECH PAUSE</span><strong id="voice-silence-value">850 ms</strong>
+            </label>
+            <input id="voice-silence" type="range" min="500" max="1500" step="100" value="850" style="width:100%;accent-color:var(--cyan)">
+            <label for="voice-speed" style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-soft);margin:10px 0 4px">
+              <span>ASSISTANT SPEAKING SPEED</span><strong id="voice-speed-value">1.0×</strong>
+            </label>
+            <input id="voice-speed" type="range" min="0.8" max="1.2" step="0.05" value="1" style="width:100%;accent-color:var(--cyan)">
+            <button class="btn secondary btn-sm" id="voice-settings-reset" style="margin-top:10px">RESET VOICE SETTINGS</button>
+            <p class="voice-note-txt">Settings are saved in this browser on this device. Higher sensitivity detects quieter speech but may pick up more background noise.</p>
+          </div>
+          <p class="voice-note-txt">Offline mode uses local Whisper transcription. First install/download requires internet. Voice input uses local voice-activity detection and local Whisper transcription. The microphone runs only while listening is enabled; no browser cloud speech-recognition service is used.</p>
+        </div>
+
+        <!-- Phase 35: local system diagnostics. Checks run only after explicit user click. -->
+        <section class="info-card diagnostics-card" id="system-diagnostics-card" aria-labelledby="system-diagnostics-title">
+          <div class="info-card-title" id="system-diagnostics-title">SYSTEM HEALTH &amp; DIAGNOSTICS</div>
+          <p class="voice-note-txt diagnostics-intro">Check ANSHU, Ollama, the configured AI model, microphone support, and English speech output.</p>
+          <button class="btn secondary btn-sm diagnostics-run" id="run-diagnostics-btn" type="button">RUN SYSTEM CHECK</button>
+          <div class="diagnostics-scroll" aria-label="System check results">
+            <div id="diagnostics-results" aria-live="polite" aria-busy="false">
+              <div class="voice-note-txt">No checks yet. Run a system check to see results.</div>
+            </div>
+          </div>
+          <p class="voice-note-txt diagnostics-privacy">Privacy: this check does not record audio, request microphone access, or send data outside localhost.</p>
+        </section>
+
+        <!-- Daily brief panel (right) -->
+        <div class="info-card">
+          <div class="info-card-title">DAILY COMMAND BRIEF</div>
+          <div id="brief-right">
+            <div class="brief-row"><span class="bkey">DATE</span><span class="bval" id="br-date">—</span></div>
+            <div class="brief-row"><span class="bkey">FOCUS</span><span class="bval" id="br-focus" style="max-width:130px;overflow:hidden;text-overflow:ellipsis">—</span></div>
+            <div class="brief-row"><span class="bkey">OPEN TASKS</span><span class="bval" id="br-open">—</span></div>
+            <div class="brief-row"><span class="bkey">OVERDUE</span><span class="bval" id="br-overdue" style="color:var(--red)">—</span></div>
+            <div class="brief-row"><span class="bkey">DUE TODAY</span><span class="bval" id="br-today">—</span></div>
+          </div>
+          <div class="btn-row" style="margin-top:8px">
+            <button class="btn secondary btn-sm" id="brief-refresh-right">↻ Refresh</button>
+          </div>
+        </div>
+
+        <!-- Set today's focus -->
+        <div class="info-card">
+          <div class="info-card-title">TODAY'S FOCUS</div>
+          <input class="field" type="text" id="dailyFocusInput" maxlength="240" placeholder="What matters most today?" style="font-size:12px">
+          <button class="btn btn-sm" id="dailyFocusSave" style="margin-top:6px;width:100%">Save Focus</button>
+          <div id="dailyFocusStatus" style="font-size:10px;color:var(--text-dim);margin-top:5px"></div>
+        </div>
+
+        <!-- Notes -->
+        <div class="info-card">
+          <div class="info-card-title">LOCAL NOTES</div>
+          <textarea class="field" id="noteInput" placeholder="Quick note for this browser…" style="min-height:52px;font-size:12px"></textarea>
+          <button class="btn btn-sm" id="saveNote" style="width:100%">Save Note</button>
+          <div id="notesList" class="mem-panel-list" style="margin-top:8px"><div style="color:var(--text-dim);font-size:12px">No saved notes yet.</div></div>
+        </div>
+
+        <!-- Notification -->
+        <div class="info-card">
+          <div class="info-card-title">REMINDER NOTIFICATIONS</div>
+          <button class="btn secondary btn-sm" id="desktopNotify" style="width:100%">Enable Notifications</button>
+          <div id="notifyStatus" style="font-size:11px;color:var(--text-dim);margin-top:6px"></div>
+        </div>
+      </aside>
+
+    </section><!-- /#page-anshu -->
+
+
+    <!-- ═══════════════════════════════════════════════
+         PAGE: ROBOTIC LAB
+    ═══════════════════════════════════════════════ -->
+    <section class="page" id="page-lab" aria-label="Robotic Lab workspace">
+
+      <!-- Lab header bar -->
+      <div id="lab-header">
+        <div class="lab-title">ROBOTIC LAB · <span>SCOUT-01</span></div>
+        <div style="font-size:11px;color:var(--text-dim)">4WD Reconnaissance Simulation</div>
+        <div class="lab-status-badges">
+          <span class="lab-badge" id="lb-sim">SIM: STANDBY</span>
+          <span class="lab-badge" id="lb-drive">DRIVE: STANDBY</span>
+          <span class="lab-badge" id="lb-mode">MODE: MANUAL</span>
+        </div>
+      </div>
+
+      <!-- Lab body: canvas + panels -->
+      <div id="lab-body">
+
+        <!-- 3D Canvas -->
+        <div id="lab-canvas-wrap">
+          <!-- Three.js renderer goes here -->
+          <div id="lab-canvas-hint">DRAG TO ORBIT · SCROLL TO ZOOM · WASD / ARROWS TO DRIVE</div>
+        </div>
+
+        <!-- Side panels -->
+        <div id="lab-panels">
+
+          <!-- Phase 20 Safety Assist: dedicated visible panel -->
+          <div class="lab-panel phase20-safety-panel">
+            <div class="lab-panel-title">ROBOT SAFETY</div>
+            <div class="phase20-safety-note">SIMULATION OBSTACLE PROTECTION</div>
+            <button class="lab-btn primary full phase20-safety-button" id="lab-safety">SAFETY ASSIST: ON</button>
+            <button class="lab-btn full phase20-safety-button" id="lab-recharge">RESET SIM BATTERY</button>
+            <div class="metric-row"><span class="mk">FRONT RANGE</span><span class="mv" id="lab-range">— cm</span></div>
+            <div class="metric-row"><span class="mk">REAR RANGE</span><span class="mv" id="lab-rear-range">— cm</span></div>
+            <div class="metric-row"><span class="mk">SAFETY</span><span class="mv ok" id="lab-safety-status">ARMED</span></div>
+          </div>
+
+          <!-- Mission Control -->
+          <div class="lab-panel">
+            <div class="lab-panel-title">MISSION CONTROL</div>
+            <div class="lab-controls">
+              <button class="lab-btn primary" id="lab-start">INITIALIZE</button>
+              <button class="lab-btn danger-btn" id="lab-stop">EMERGENCY STOP</button>
+              <button class="lab-btn" id="lab-auto">AUTO NAV</button>
+              <button class="lab-btn" id="lab-mission">MISSION</button>
+              <button class="lab-btn full" id="lab-wires">TOGGLE WIRING</button>
+              <button class="lab-btn full" id="lab-labels">TOGGLE LABELS</button>
+            </div>
+          </div>
+
+          <!-- Telemetry -->
+          <div class="lab-panel">
+            <div class="lab-panel-title">ROVER TELEMETRY</div>
+            <div class="metric-row"><span class="mk">SPEED</span><span class="mv" id="lab-speed">0.0 m/s</span></div>
+            <div class="metric-row"><span class="mk">SIM BATTERY</span><span class="mv ok" id="lab-battery">100%</span></div>
+            <div class="batt-bar"><div class="batt-bar-fill" id="lab-battery-bar" style="width:100%"></div></div>
+            <div class="metric-row"><span class="mk">OBSTACLE</span><span class="mv ok" id="lab-alert">CLEAR</span></div>
+            <div class="metric-row"><span class="mk">MISSION</span><span class="mv" id="lab-mission-status">NONE</span></div>
+            <div class="metric-row"><span class="mk">TARGET DIST</span><span class="mv" id="lab-target-dist">— m</span></div>
+          </div>
+
+          <!-- Radar -->
+          <div class="lab-panel">
+            <div class="lab-panel-title">FRONT RADAR / 4M</div>
+            <canvas id="radar" width="180" height="180" aria-label="Radar display showing obstacle positions" style="width:100%;border-radius:6px"></canvas>
+          </div>
+
+          <!-- Manual drive -->
+          <div class="lab-panel">
+            <div class="lab-panel-title">MANUAL DRIVE</div>
+            <div class="dpad" aria-label="Directional controls">
+              <div class="dpad-blank"></div>
+              <button class="dpad-btn" data-key="w" aria-label="Forward">▲</button>
+              <div class="dpad-blank"></div>
+              <button class="dpad-btn" data-key="a" aria-label="Left">◀</button>
+              <button class="dpad-btn" data-key="s" aria-label="Backward">▼</button>
+              <button class="dpad-btn" data-key="d" aria-label="Right">▶</button>
+            </div>
+            <p style="font-size:10px;color:var(--text-dim);line-height:1.5;margin-top:4px">WASD or arrow keys. Space = emergency stop. Autonomous mode avoids obstacles.</p>
+          </div>
+
+          <!-- View options -->
+          <div class="lab-panel">
+            <div class="lab-panel-title">AI VOICE LINK</div>
+            <div style="font-size:11px;color:var(--text-soft);margin-bottom:8px" id="lab-voice-hint">Voice commands routed through the ANSHU assistant on the main page.</div>
+            <div style="font-size:11px;color:var(--text-dim)">Go to the ANSHU page to activate voice.</div>
+          </div>
+
+          <!-- Virtual electronics -->
+          <div class="lab-panel">
+            <div class="lab-panel-title">VIRTUAL ELECTRONICS</div>
+            <div class="parts-grid">
+              <div class="part-chip"><div class="pname">ESP32 DEVKIT</div><div class="pdesc">Controller</div></div>
+              <div class="part-chip"><div class="pname">L298N</div><div class="pdesc">Motor driver</div></div>
+              <div class="part-chip"><div class="pname">HC-SR04</div><div class="pdesc">Ultrasonic</div></div>
+              <div class="part-chip"><div class="pname">2S BATTERY</div><div class="pdesc">Power pack</div></div>
+            </div>
+            <p style="font-size:10px;color:var(--text-dim);margin-top:8px;line-height:1.5">Virtual prototype. No physical hardware connected.</p>
+          </div>
+
+          <!-- Console -->
+          <div class="lab-panel">
+            <div class="lab-panel-title">CONSOLE</div>
+            <div class="console-output" id="lab-console"></div>
+          </div>
+
+        </div><!-- /#lab-panels -->
+      </div><!-- /#lab-body -->
+
+    </section><!-- /#page-lab -->
+
+  </div><!-- /#pages -->
+</div><!-- /#app -->
+
+<!-- ─── TF / COCO-SSD / MEDIAPIPE ─────────────────────────── -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
+
+<script type="module">
+/* ─────────────────────────────────────────────────────────────
+   ANSHU PHASE 13 — Complete Frontend Logic
+   Preserves all API contracts with server.py.
+   Modules: Navigation, Orb, Chat, Voice, Vision, Memory,
+            Desktop, Hand Control, Robotic Lab (Three.js)
+───────────────────────────────────────────────────────────── */
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ═══ UTILITIES ══════════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+const el = (tag, attrs={}, ...children) => {
+  const e = document.createElement(tag);
+  Object.assign(e, attrs);
+  children.forEach(c => typeof c === 'string' ? e.appendChild(document.createTextNode(c)) : e.appendChild(c));
+  return e;
+};
+
+function toast(msg, type='ok', duration=3000) {
+  const zone = $('toast-zone');
+  const t = el('div', {className:`toast ${type}`}, msg);
+  zone.appendChild(t);
+  setTimeout(() => t.remove(), duration);
+}
+
+function showModal(title, body, actions) {
+  $('modal-title').textContent = title;
+  $('modal-body').textContent = body;
+  const act = $('modal-actions');
+  act.replaceChildren();
+  actions.forEach(a => {
+    const b = el('button', {className:`btn ${a.cls||'secondary'}`}, a.label);
+    b.onclick = () => { $('modal-overlay').classList.remove('open'); a.fn(); };
+    act.appendChild(b);
+  });
+  $('modal-overlay').classList.add('open');
+}
+$('modal-overlay').addEventListener('click', e => {
+  if (e.target === $('modal-overlay')) $('modal-overlay').classList.remove('open');
+});
+
+function labLog(text, type='') {
+  const c = $('lab-console');
+  const line = el('div', {className:`console-line${type?' '+type:''}`}, `> ${text}`);
+  c.appendChild(line);
+  c.scrollTop = c.scrollHeight;
+  // Keep last 40 lines
+  while (c.children.length > 40) c.removeChild(c.firstChild);
+}
+
+/* ═══ NAVIGATION ═════════════════════════════════════════════ */
+const pages = { anshu: $('page-anshu'), lab: $('page-lab') };
+const navBtns = { anshu: $('nav-anshu'), lab: $('nav-lab') };
+
+function showPage(name) {
+  Object.entries(pages).forEach(([k, p]) => {
+    p.classList.toggle('active', k === name);
+  });
+  Object.entries(navBtns).forEach(([k, b]) => {
+    b.classList.toggle('active', k === name);
+    b.setAttribute('aria-current', k === name ? 'page' : 'false');
+  });
+  // Resize Three.js renderer when switching to lab
+  if (name === 'lab') {
+    // Run resize immediately and again after layout settles
+    [10, 100, 300].forEach(delay => setTimeout(() => {
+      const w = labCanvasWrap.clientWidth || innerWidth;
+      const h = labCanvasWrap.clientHeight || Math.max(innerHeight - 120, 300);
+      if (w > 0 && h > 0 && renderer) {
+        renderer.setSize(w, h);
+        labCamera.aspect = w / h;
+        labCamera.updateProjectionMatrix();
+      }
+    }, delay));
+  }
+}
+
+$('nav-anshu').onclick = () => showPage('anshu');
+$('nav-lab').onclick = () => showPage('lab');
+
+/* ═══ ORB STATE MACHINE ══════════════════════════════════════ */
+const orbWrap = $('orb-wrap');
+const orbStatus = $('orb-status');
+const ORB_STATES = ['idle','listening','processing','speaking','error'];
+
+let orbState = 'idle';
+
+function setOrbState(state) {
+  if (!ORB_STATES.includes(state)) state = 'idle';
+  orbState = state;
+  orbWrap.className = ''; // clear state classes
+  if (state !== 'idle') orbWrap.classList.add(`state-${state}`);
+
+  const labels = {
+    idle: 'IDLE · READY',
+    listening: 'LISTENING…',
+    processing: 'THINKING…',
+    speaking: 'SPEAKING',
+    error: 'ERROR · CHECK CONNECTION'
+  };
+  orbStatus.textContent = labels[state] || 'IDLE';
+  orbStatus.className = '';
+  if (state !== 'idle') orbStatus.classList.add(state);
+}
+
+// Orb click to toggle voice
+orbWrap.addEventListener('click', () => {
+  if (orbState === 'listening') stopVoice();
+  else if (orbState === 'idle' || orbState === 'error') startVoice();
+});
+orbWrap.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); orbWrap.click(); } });
+
+/* ═══ AI HEALTH CHECK ════════════════════════════════════════ */
+async function checkAI() {
+  const badge = $('ai-badge');
+  const badgeText = $('ai-badge-text');
+  try {
+    const r = await fetch('/api/health');
+    const d = await r.json();
+    if (d.ollama && d.modelInstalled) {
+      badge.className = 'status-badge';
+      badgeText.textContent = 'AI ONLINE · ' + d.model;
+      $('ss-model').textContent = d.model;
+      $('ss-ollama').textContent = 'ONLINE';
+      return d;
+    } else if (d.ollama) {
+      badge.className = 'status-badge';
+      badgeText.textContent = 'OLLAMA · NO MODEL';
+      $('ss-model').textContent = 'NOT INSTALLED';
+      $('ss-ollama').textContent = 'RUNNING';
+    } else {
+      badge.className = 'status-badge offline';
+      badgeText.textContent = 'AI OFFLINE';
+      $('ss-ollama').textContent = 'OFFLINE';
+    }
+  } catch {
+    badge.className = 'status-badge offline';
+    badgeText.textContent = 'SERVER OFFLINE';
+    $('ss-ollama').textContent = 'OFFLINE';
+  }
+  return null;
+}
+
+async function loadSystemStatus() {
+  try {
+    const r = await fetch('/api/desktop/status');
+    const d = await r.json();
+    $('ss-memory').textContent = d.memory || '—';
+    $('ss-disk').textContent = d.disk || '—';
+    $('ss-battery').textContent = d.battery || '—';
+  } catch {}
+}
+
+
+/* PHASE 16 — one-click local diagnostics; checks capability availability without opening the camera. */
+const diagnosticsButton = $('runDiagnostics');
+const diagnosticsResults = $('diagnosticsResults');
+function diagnosticRow(label, status, detail='') {
+  const row = el('div', {style:'display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px solid var(--border)'});
+  const mark = el('span', {style:'flex:0 0 18px;font-weight:700;color:' + (status === 'OK' ? 'var(--green,#63e6be)' : status === 'WARN' ? 'var(--amber,#ffbd59)' : 'var(--red,#ff7070)')}, status === 'OK' ? '✓' : status === 'WARN' ? '!' : '×');
+  const content = el('div', {style:'min-width:0;overflow-wrap:anywhere'});
+  const title = el('strong', {}, label);
+  content.appendChild(title);
+  if (detail) content.appendChild(el('div', {style:'color:var(--text-dim)'}, detail));
+  row.append(mark, content);
+  diagnosticsResults.appendChild(row);
+}
+async function runSystemDiagnostics() {
+  diagnosticsButton.disabled = true;
+  diagnosticsButton.textContent = 'Checking…';
+  diagnosticsResults.style.display = 'grid';
+  diagnosticsResults.setAttribute('aria-busy', 'true');
+  diagnosticsResults.replaceChildren();
+  try {
+    let health = null;
+    try {
+      const r = await fetch('/api/health', {cache:'no-store'});
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      health = await r.json();
+      diagnosticRow('Local ANSHU server', 'OK', 'Connected at localhost.');
+    } catch (e) {
+      diagnosticRow('Local ANSHU server', 'FAIL', e.message || 'Could not reach server.');
+    }
+    if (health) {
+      diagnosticRow('Ollama service', health.ollama ? 'OK' : 'FAIL', health.ollama ? 'Local AI service is responding.' : 'Start Ollama, then run this check again.');
+      diagnosticRow('Text model (' + (health.model || 'configured') + ')', health.modelInstalled ? 'OK' : 'FAIL', health.modelInstalled ? 'Text model is installed.' : 'Install the configured text model in Ollama.');
+      if (health.visionModel) diagnosticRow('Vision model (' + health.visionModel + ')', health.visionModelInstalled ? 'OK' : 'WARN', health.visionModelInstalled ? 'Vision model is installed.' : 'Image Q&A may not work until this model is installed.');
+    }
+    const speechIn = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+    diagnosticRow('Browser speech recognition', speechIn ? 'OK' : 'FAIL', speechIn ? 'Speech input API is available; microphone permission may still be required.' : 'Use a supported browser such as desktop Chrome.');
+    diagnosticRow('Text-to-speech', ('speechSynthesis' in window && 'SpeechSynthesisUtterance' in window) ? 'OK' : 'FAIL', ('speechSynthesis' in window && 'SpeechSynthesisUtterance' in window) ? 'Spoken responses are supported.' : 'Browser speech output is unavailable.');
+    diagnosticRow('Camera API', !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) ? 'OK' : 'WARN', !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) ? 'Camera API is available; permission is only requested when you enable vision.' : 'Camera access is not exposed in this browser/context.');
+    diagnosticRow('Secure local origin', location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'OK' : 'WARN', location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'Localhost supports microphone/camera permissions in modern browsers.' : 'Open the app at http://localhost:8000 for reliable device permissions.');
+    diagnosticRow('Local browser storage', (() => { try { localStorage.setItem('__anshu_diag','1'); localStorage.removeItem('__anshu_diag'); return 'OK'; } catch { return 'FAIL'; } })(), 'Used for some local UI preferences and notes.');
+    const summary = el('div', {style:'font-weight:700;margin-top:8px;color:var(--text)'}, 'System check complete. Review any warnings or failures above.');
+    diagnosticsResults.appendChild(summary);
+  } catch (e) {
+    diagnosticRow('Diagnostics', 'FAIL', e.message || 'Unexpected diagnostic error.');
+  } finally {
+    diagnosticsButton.disabled = false;
+    diagnosticsButton.textContent = 'Run System Check Again';
+    diagnosticsResults.setAttribute('aria-busy', 'false');
+  }
+}
+diagnosticsButton.addEventListener('click', runSystemDiagnostics);
+
+checkAI();
+loadSystemStatus();
+setInterval(checkAI, 30000);
+
+/* ═══ CHAT / CONVERSATION ════════════════════════════════════ */
+const conversation = $('conversation');
+let chatBusy = false;
+let robotState = {};  // keeps robot telemetry for the chat API
+
+function appendMsg(role, text, isError=false, timestamp=null) {
+  const d = timestamp ? new Date(timestamp) : new Date();
+  const validTime = !Number.isNaN(d.getTime());
+  const time = validTime
+    ? d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0')
+    : '--:--';
+
+  const wrap = el('div', {className:`msg ${isError?'error':role}`});
+  const avatar = el('div', {className:'msg-avatar'}, role === 'user' ? 'U' : 'AN');
+  const bubble = el('div', {className:'msg-bubble'}, text);
+  const meta = el('div', {className:'msg-meta'}, isError ? '⚠ Error' : time);
+
+  if (role === 'user') wrap.append(bubble, avatar);
+  else wrap.append(avatar, el('div', {}, bubble, meta));
+
+  conversation.appendChild(wrap);
+  conversation.scrollTop = conversation.scrollHeight;
+  return bubble;
+}
+
+/* Restore the most recent saved conversation after a reload.
+   The API returns newest-first, so reverse it before rendering chronologically. */
+async function loadConversationHistory() {
+  try {
+    const response = await fetch('/api/phase12/history', { cache: 'no-store' });
+    if (!response.ok) throw new Error('History request failed');
+    const data = await response.json();
+    const history = Array.isArray(data.history) ? data.history : [];
+    conversation.replaceChildren();
+    history.slice().reverse().forEach(item => {
+      if (!item || !['user', 'assistant'].includes(item.role)) return;
+      const role = item.role === 'assistant' ? 'anshu' : 'user';
+      appendMsg(role, String(item.content ?? ''), false, item.created || null);
+    });
+  } catch (e) {
+    // Chat remains usable if history is temporarily unavailable.
+    console.warn('ANSHU conversation history could not be restored:', e);
+  }
+}
+
+const historyReady = loadConversationHistory();
+
+async function sendMessage(text, fromVoice=false) {
+    // Phase 36.1: typed "Remember that ..." requests are saved locally.
+    const __anshuMemoryRequest = String(text || '').trim();
+    const __anshuRememberMatch = __anshuMemoryRequest.match(/^remember(?:\s+that)?\s+(.+)$/i);
+    if (__anshuRememberMatch && !chatBusy) {
+      const __anshuMemoryText = __anshuRememberMatch[1].trim();
+      if (__anshuMemoryText) {
+        chatBusy = true;
+        appendMsg('user', __anshuMemoryRequest);
+        const memoryBubble = appendMsg('anshu', 'Saving this to local memory…');
+        try {
+          await saveMemory(__anshuMemoryText);
+          memoryBubble.textContent = 'I saved that to your local memory.';
+          speakANSHU('I saved that to your local memory.');
+        } catch (e) {
+          memoryBubble.textContent = 'I could not save that memory: ' + e.message;
+          setOrbState('error');
+        } finally {
+          chatBusy = false;
+          if (orbState !== 'error') setOrbState('idle');
+        }
+        return;
+      }
+    }
+
+    // Phase 24.2: route clear computer-control requests before the general chat API.
+    // This is a fallback for voice/browser paths that submit recognized speech through chat,
+    // and also lets typed computer requests use the same confirmation-gated agent.
+    // routeVoiceComputerTask returns true only when it handles a supported computer intent.
+    const __anshuIncomingText = String(text || '').trim();
+    if (!chatBusy && __anshuIncomingText && typeof routeVoiceComputerTask === 'function') {
+      if (routeVoiceComputerTask(__anshuIncomingText)) return;
+    }
+
+    // Prevent duplicate rapid submissions of the same message (voice recognition can fire twice).
+    const __anshuNow = Date.now();
+    const __anshuNorm = String(text || '').trim().toLowerCase();
+    if (__anshuNorm && window.__anshuLastSubmittedText === __anshuNorm && __anshuNow - (window.__anshuLastSubmittedAt || 0) < 1800) {
+      return;
+    }
+    window.__anshuLastSubmittedText = __anshuNorm;
+    window.__anshuLastSubmittedAt = __anshuNow;
+
+  if (chatBusy || !text.trim()) return;
+  chatBusy = true;
+  const question = text.trim().slice(0, 2000);
+  await historyReady;
+
+  appendMsg('user', question);
+  setOrbState('processing');
+
+  const typingBubble = appendMsg('anshu', 'Thinking…');
+  typingBubble.style.color = 'var(--text-dim)';
+
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: question, robot: robotState, stream: true })
+    });
+    if (!response.ok) {
+      let errorData = {}; try { errorData = await response.json(); } catch (_) {}
+      throw new Error(errorData.error || 'Request failed');
+    }
+    let streamedReply = '', result = { reply: '', action: 'none' };
+    const contentType = (response.headers.get('content-type') || '').toLowerCase();
+    let liveSpeechStarted = false;
+    if (fromVoice && !contentType.includes('application/json') && typeof beginStreamingSpeech === 'function') { liveSpeechStarted = beginStreamingSpeech(); }
+
+    // Some safe, deterministic server routes (for example, "What is your name?"
+    // and explicitly allowlisted robot commands) intentionally return regular JSON.
+    // Accept that response format instead of incorrectly treating it as an empty stream.
+    if (contentType.includes('application/json')) {
+      const payload = await response.json();
+      result = payload && payload.result ? payload.result : payload;
+    } else {
+      if (!response.body || !response.body.getReader) {
+        throw new Error('This browser cannot read the assistant response.');
+      }
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let pending = '';
+      const handleStreamLine = (line) => {
+        if (!line || !line.trim()) return;
+        let event;
+        try { event = JSON.parse(line); } catch (_) { return; }
+        if (event.type === 'delta' && typeof event.text === 'string') {
+          streamedReply += event.text;
+          typingBubble.textContent = streamedReply;
+          conversation.scrollTop = conversation.scrollHeight;
+          if (liveSpeechStarted && typeof feedStreamingSpeech === 'function') feedStreamingSpeech(event.text);
+        } else if (event.type === 'done' && event.result) {
+          result = event.result;
+        }
+      };
+      while (true) {
+        const part = await reader.read();
+        if (part.done) break;
+        pending += decoder.decode(part.value, { stream: true });
+        const lines = pending.split('\n');
+        pending = lines.pop() || '';
+        for (const line of lines) handleStreamLine(line);
+      }
+      // Flush any bytes held by TextDecoder and process a final line even when
+      // the server closes without a trailing newline.
+      pending += decoder.decode();
+      if (pending.trim()) handleStreamLine(pending);
+    }
+    const reply = String(result.reply || streamedReply || 'The assistant returned an empty response. Please try again.');
+    typingBubble.textContent = reply;
+    typingBubble.style.color = '';
+
+    // Apply robot action if any
+    if (result.action && result.action !== 'none') {
+      applyRobotAction(result.action);
+    }
+
+    if (fromVoice) {
+      if (liveSpeechStarted && typeof finishStreamingSpeech === 'function') finishStreamingSpeech();
+      else speakANSHU(reply);
+    } else {
+      setOrbState('idle');
+    }
+
+  } catch(e) {
+    typingBubble.textContent = e.message || 'Connection problem. Check that Ollama is running and the server is started.';
+    typingBubble.closest('.msg')?.classList.add('error');
+    setOrbState('error');
+    if (fromVoice) speakANSHU('I cannot reach my AI brain. Please check Ollama.');
+  } finally {
+    chatBusy = false;
+    $('send-btn').disabled = false;
+  }
+}
+
+// Composer
+const chatInput = $('chat-input');
+const sendBtn = $('send-btn');
+
+chatInput.addEventListener('input', () => {
+  chatInput.style.height = 'auto';
+  chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+});
+chatInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    doSend();
+  }
+});
+sendBtn.onclick = doSend;
+$('cam-btn').onclick = () => toggleCapPanel('vision');
+
+function doSend() {
+  const text = chatInput.value.trim();
+  if (!text) return;
+  chatInput.value = '';
+  chatInput.style.height = 'auto';
+  sendBtn.disabled = true;
+  sendMessage(text, false);
+}
+
+/* ═══ VOICE ══════════════════════════════════════════════════ */
+let recognition = null;
+let voiceEnabled = false;
+let recognitionRestart = false;
+let wakeWordMode = false;
+let wakeWordArmedUntil = 0;
+let anshuIsSpeaking = false;
+
+const voiceBtn = $('voice-btn');
+const transcriptDisplay = $('transcript-display');
+const voiceStateLbl = $('voice-state-label');
+const voiceDot = $('voice-dot');
+
+function setVoiceUI(enabled) {
+  voiceBtn.classList.toggle('listening', enabled);
+  voiceBtn.setAttribute('aria-pressed', String(enabled));
+  voiceDot.style.background = enabled ? 'var(--cyan)' : 'var(--text-dim)';
+  voiceDot.style.boxShadow = enabled ? '0 0 8px var(--cyan)' : 'none';
+  voiceStateLbl.textContent = enabled ? 'ACTIVE' : 'OFFLINE';
+  voiceStateLbl.className = 'voice-state' + (enabled ? ' on' : '');
+}
+
+// Phase 34: user-adjustable local voice controls. Values are stored only in this browser.
+const VOICE_SETTINGS_KEY = 'anshu.voice.settings.v1';
+const voiceSettingsDefaults = { sensitivity: 2, silenceMs: 850, speed: 1.0 };
+function loadVoiceSettings() {
+  try { const saved = JSON.parse(localStorage.getItem(VOICE_SETTINGS_KEY) || '{}'); return {
+    sensitivity: [1,2,3].includes(Number(saved.sensitivity)) ? Number(saved.sensitivity) : 2,
+    silenceMs: Math.max(500, Math.min(1500, Number(saved.silenceMs) || 850)),
+    speed: Math.max(0.8, Math.min(1.2, Number(saved.speed) || 1.0))
+  }; } catch (_) { return {...voiceSettingsDefaults}; }
+}
+let voiceSettings = loadVoiceSettings();
+const voiceSensitivityInput = $('voice-sensitivity'), voiceSilenceInput = $('voice-silence'), voiceSpeedInput = $('voice-speed');
+function applyVoiceSettings(save = true) {
+  if (!voiceSensitivityInput || !voiceSilenceInput || !voiceSpeedInput) return;
+  voiceSettings = { sensitivity: Number(voiceSensitivityInput.value), silenceMs: Number(voiceSilenceInput.value), speed: Number(voiceSpeedInput.value) };
+  $('voice-sensitivity-value').textContent = ['','Low','Balanced','High'][voiceSettings.sensitivity];
+  $('voice-silence-value').textContent = voiceSettings.silenceMs + ' ms';
+  $('voice-speed-value').textContent = voiceSettings.speed.toFixed(2).replace(/0$/, '') + '×';
+  if (save) { try { localStorage.setItem(VOICE_SETTINGS_KEY, JSON.stringify(voiceSettings)); } catch (_) {} }
+}
+if (voiceSensitivityInput) {
+  voiceSensitivityInput.value = voiceSettings.sensitivity; voiceSilenceInput.value = voiceSettings.silenceMs; voiceSpeedInput.value = voiceSettings.speed;
+  [voiceSensitivityInput, voiceSilenceInput, voiceSpeedInput].forEach(el => el.addEventListener('input', () => applyVoiceSettings(true)));
+  $('voice-settings-reset').addEventListener('click', () => { voiceSensitivityInput.value=2; voiceSilenceInput.value=850; voiceSpeedInput.value=1; applyVoiceSettings(true); toast('Voice settings reset to defaults.','ok'); });
+  applyVoiceSettings(false);
+}
+function currentVadThreshold() { return ({1:0.012, 2:0.018, 3:0.026})[voiceSettings.sensitivity] || 0.018; }
+
+function chooseAnshuVoice(text = '') {
+  if (!('speechSynthesis' in window)) return null;
+  const voices = window.speechSynthesis.getVoices() || [];
+  const isMalayalam = /[\\u0D00-\\u0D7F]/.test(String(text || ''));
+  const languageVoices = voices.filter(v => isMalayalam ? /^ml(-|$)/i.test(v.lang || '') : /^en(-|$)/i.test(v.lang || ''));
+  const preferredPatterns = [/jenny/i, /aria/i, /samantha/i, /ava/i, /susan/i, /zira/i, /female/i, /woman/i];
+  for (const pattern of preferredPatterns) {
+    const found = languageVoices.find(v => pattern.test(v.name || ''));
+    if (found) return found;
+  }
+  return languageVoices[0] || null;
+}
+
+let speechGeneration = 0;
+let speechResumeTimer = null;
+// Phase 31: sentence-level speech queue and local barge-in monitor.
+let speechQueue = [], speechBuffer = '', speechStreamActive = false, speechPumpRunning = false;
+let interruptionContext = null, interruptionTimer = null, interruptionSince = 0;
+
+function scheduleVoiceResume(delay = 450) {
+  if (speechResumeTimer) clearTimeout(speechResumeTimer);
+  if (!voiceEnabled || !recognitionRestart || !recognition || anshuIsSpeaking) return;
+  speechResumeTimer = setTimeout(() => {
+    speechResumeTimer = null;
+    if (!voiceEnabled || !recognitionRestart || !recognition || anshuIsSpeaking) return;
+    try { recognition.start(); }
+    catch (e) {
+      // A recognition session may still be closing. Its onend handler retries safely.
+    }
+  }, delay);
+}
+
+function makeAnshuUtterance(text, generation) {
+  const u = new SpeechSynthesisUtterance(String(text || '').trim());
+  const selectedVoice = chooseAnshuVoice(text);
+  if (selectedVoice) { u.voice = selectedVoice; u.lang = selectedVoice.lang || 'en-US'; }
+  else u.lang = 'en-US';
+  u.rate = voiceSettings.speed; u.pitch = 1.12; u.volume = 1;
+  const advance = () => { if (generation !== speechGeneration) return; speechPumpRunning = false; pumpStreamingSpeech(); };
+  u.onend = advance; u.onerror = advance;
+  return u;
+}
+function pumpStreamingSpeech() {
+  if (speechPumpRunning || !('speechSynthesis' in window)) return;
+  if (speechQueue.length) {
+    speechPumpRunning = true;
+    window.speechSynthesis.speak(makeAnshuUtterance(speechQueue.shift(), speechGeneration));
+    return;
+  }
+  if (!speechStreamActive) {
+    anshuIsSpeaking = false; offlineAssistantSpeaking = false; stopInterruptionMonitor();
+    if (offlineWakeEnabled) setOrbState('listening'); else setOrbState('idle');
+  }
+}
+function beginStreamingSpeech() {
+  if (!('speechSynthesis' in window)) return false;
+  speechGeneration++; window.speechSynthesis.cancel();
+  speechQueue = []; speechBuffer = ''; speechStreamActive = true; speechPumpRunning = false;
+  if (speechResumeTimer) { clearTimeout(speechResumeTimer); speechResumeTimer = null; }
+  anshuIsSpeaking = true; offlineAssistantSpeaking = !!offlineWakeEnabled; setOrbState('speaking');
+  startInterruptionMonitor();
+  return true;
+}
+function feedStreamingSpeech(delta) {
+  if (!speechStreamActive || !delta) return;
+  speechBuffer += String(delta);
+  const pieces = speechBuffer.split(/(?<=[.!?。！？])\s+|\n+/);
+  if (pieces.length > 1) {
+    speechBuffer = pieces.pop() || '';
+    for (const piece of pieces) if (piece.trim()) speechQueue.push(piece.trim());
+    pumpStreamingSpeech();
+  }
+  if (speechBuffer.length > 260) {
+    const cut = speechBuffer.lastIndexOf(' ', 220);
+    if (cut > 80) { speechQueue.push(speechBuffer.slice(0, cut).trim()); speechBuffer = speechBuffer.slice(cut + 1); pumpStreamingSpeech(); }
+  }
+}
+function finishStreamingSpeech() {
+  if (!speechStreamActive) return;
+  if (speechBuffer.trim()) speechQueue.push(speechBuffer.trim());
+  speechBuffer = ''; speechStreamActive = false; pumpStreamingSpeech();
+}
+function startInterruptionMonitor() {
+  // Barge-in monitoring is active only after the user explicitly enables Offline Wake.
+  if (!offlineWakeEnabled || !offlineStream || interruptionContext) return;
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return;
+  try {
+    const ctx = new AudioCtx(), analyser = ctx.createAnalyser(); analyser.fftSize = 1024;
+    const source = ctx.createMediaStreamSource(offlineStream); source.connect(analyser);
+    const samples = new Uint8Array(analyser.fftSize);
+    interruptionContext = {ctx, analyser, source, samples}; interruptionSince = 0;
+    interruptionTimer = setInterval(() => {
+      if (!anshuIsSpeaking || !interruptionContext) return;
+      analyser.getByteTimeDomainData(samples);
+      let sum = 0; for (let i=0;i<samples.length;i++) { const v=(samples[i]-128)/128; sum += v*v; }
+      const rms = Math.sqrt(sum / samples.length), now = Date.now();
+      if (rms > 0.065) {
+        if (!interruptionSince) interruptionSince = now;
+        if (now - interruptionSince >= 420) { stopSpeaking(); offlineSetStatus('Interrupted. Listening for your command…', true); }
+      } else interruptionSince = 0;
+    }, 60);
+  } catch (_) { stopInterruptionMonitor(); }
+}
+function stopInterruptionMonitor() {
+  if (interruptionTimer) { clearInterval(interruptionTimer); interruptionTimer = null; }
+  if (interruptionContext) {
+    try { interruptionContext.source.disconnect(); } catch (_) {}
+    try { interruptionContext.ctx.close(); } catch (_) {}
+    interruptionContext = null;
+  }
+  interruptionSince = 0;
+}
+
+function speakANSHU(text) {
+  if (!('speechSynthesis' in window)) { setOrbState('idle'); return; }
+  speechQueue = []; speechBuffer = ''; speechStreamActive = false; speechPumpRunning = false;
+  stopInterruptionMonitor();
+  const generation = ++speechGeneration;
+  if (speechResumeTimer) { clearTimeout(speechResumeTimer); speechResumeTimer = null; }
+  anshuIsSpeaking = true;
+  offlineAssistantSpeaking = !!offlineWakeEnabled;
+  // Offline microphone capture pauses while local TTS is speaking to prevent echo loops.
+  setOrbState('speaking');
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(String(text || ''));
+  const selectedVoice = chooseAnshuVoice(text);
+  if (selectedVoice) {
+    u.voice = selectedVoice;
+    u.lang = selectedVoice.lang || 'en-US';
+  } else {
+    u.lang = /[\\u0D00-\\u0D7F]/.test(String(text || '')) ? 'ml-IN' : 'en-US';
+  }
+  // Preserve the selected system voice and its softer presentation.
+  u.rate = voiceSettings.speed; u.pitch = 1.12; u.volume = 1;
+  const finishSpeaking = () => {
+    // cancel() can fire an old utterance's end/error callback; ignore stale callbacks.
+    if (generation !== speechGeneration) return;
+    anshuIsSpeaking = false;
+    offlineAssistantSpeaking = false;
+    if (voiceEnabled && recognitionRestart) {
+      setOrbState('listening');
+      scheduleVoiceResume(450);
+    } else {
+      setOrbState('idle');
+    }
+  };
+  u.onend = finishSpeaking;
+  u.onerror = finishSpeaking;
+  window.speechSynthesis.speak(u);
+  labLog('ANSHU speaks: ' + String(text || '').slice(0,60) + (String(text || '').length>60?'…':''), 'ok');
+}
+
+function stopSpeaking() {
+  speechGeneration++;
+  speechQueue = []; speechBuffer = ''; speechStreamActive = false; speechPumpRunning = false;
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  stopInterruptionMonitor();
+  anshuIsSpeaking = false; offlineAssistantSpeaking = false;
+  if (offlineWakeEnabled) setOrbState('listening'); else setOrbState('idle');
+}
+
+function startVoice() { startOfflineListening(false); }
+
+function stopVoice() { stopOfflineWake(); }
+
+voiceBtn.onclick = () => { voiceEnabled ? stopVoice() : startVoice(); };
+
+$('wake-word-btn').onclick = () => {
+  offlineRequireWake = !offlineRequireWake;
+  offlineWakeArmedUntil = 0;
+  $('wake-word-btn').textContent = offlineRequireWake ? '"HEY ANSHU" REQUIRED' : 'Wake word optional';
+  $('wake-word-btn').classList.toggle('active', offlineRequireWake);
+  toast(offlineRequireWake ? 'Local wake-word filtering enabled.' : 'Local voice commands enabled without a wake word.', 'ok');
+};
+
+// Phase 30: browser SpeechRecognition is intentionally not initialized.
+// Voice input uses only local MediaRecorder + VAD + the local Whisper endpoint.
+
+/* Offline voice: browser records locally, ANSHU server transcribes with local faster-whisper. */
+let offlineStream = null, offlineRecorder = null, offlineChunks = [], offlineWakeEnabled = false;
+let offlineBusy = false, offlineWakeTimer = null, offlineWakeArmedUntil = 0, offlineRequireWake = false, offlineAssistantSpeaking = false;
+let offlineVadStop = null;
+const offlinePttBtn = $('offline-ptt-btn'), offlineWakeBtn = $('offline-wake-btn');
+const OFFLINE_VOICE_LANGUAGE = 'en';
+function offlineSetStatus(text, active = false) {
+  transcriptDisplay.textContent = text;
+  voiceDot.style.background = active ? 'var(--cyan)' : 'var(--text-dim)';
+  voiceDot.style.boxShadow = active ? '0 0 8px var(--cyan)' : 'none';
+  voiceStateLbl.textContent = active ? 'OFFLINE MIC' : 'OFFLINE';
+  voiceStateLbl.className = 'voice-state' + (active ? ' on' : '');
+}
+async function offlineGetStream() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('Microphone access is unavailable. Open ANSHU on localhost in Chrome.');
+  if (!offlineStream) offlineStream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true, autoGainControl:true}});
+  return offlineStream;
+}
+async function offlineTranscribe(blob) {
+  const dataUrl = await new Promise((resolve,reject) => {
+    const reader = new FileReader(); reader.onload = () => resolve(String(reader.result || '')); reader.onerror = reject; reader.readAsDataURL(blob);
+  });
+  const audio = dataUrl.split(',')[1] || '';
+  const response = await fetch('/api/voice/transcribe', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({audio, language:OFFLINE_VOICE_LANGUAGE})});
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Offline transcription failed.');
+  return String(data.text || '').trim();
+}
+async function offlineRecordUntilSilence(options = {}) {
+  const maxMs = Math.max(2500, Math.min(18000, options.maxMs || 15000));
+  const startTimeoutMs = Math.max(1000, Math.min(maxMs, options.startTimeoutMs || 8000));
+  const silenceMs = Math.max(450, Math.min(1800, options.silenceMs || voiceSettings.silenceMs));
+  const stream = await offlineGetStream();
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) throw new Error('Web Audio is unavailable in this browser.');
+  const audioContext = new AudioCtx();
+  const source = audioContext.createMediaStreamSource(stream);
+  const analyser = audioContext.createAnalyser();
+  analyser.fftSize = 1024;
+  source.connect(analyser);
+  const samples = new Uint8Array(analyser.fftSize);
+  const mime = ['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus'].find(t => MediaRecorder.isTypeSupported(t));
+  const recorder = new MediaRecorder(stream, mime ? {mimeType:mime} : undefined);
+  offlineRecorder = recorder;
+  const chunks = [];
+  return await new Promise((resolve, reject) => {
+    let speechStartedAt = 0, lastVoiceAt = 0, settled = false;
+    const startedAt = Date.now();
+    const finish = (error) => {
+      if (settled) return;
+      settled = true;
+      if (vadTimer) clearInterval(vadTimer);
+      if (hardTimer) clearTimeout(hardTimer);
+      offlineVadStop = null;
+      try { if (recorder.state !== 'inactive') recorder.stop(); } catch {}
+      try { source.disconnect(); analyser.disconnect(); } catch {}
+      audioContext.close().catch(() => {});
+      if (error) reject(error);
+    };
+    const vadTimer = setInterval(() => {
+      if (settled) return;
+      analyser.getByteTimeDomainData(samples);
+      let sum = 0;
+      for (let i=0;i<samples.length;i++) { const v=(samples[i]-128)/128; sum += v*v; }
+      const rms = Math.sqrt(sum / samples.length);
+      const now = Date.now();
+      if (rms > currentVadThreshold()) {
+        if (!speechStartedAt) speechStartedAt = now;
+        lastVoiceAt = now;
+        if (options.onSpeech) options.onSpeech(true);
+      }
+      if (!speechStartedAt && now-startedAt >= startTimeoutMs) finish();
+      else if (speechStartedAt && now-lastVoiceAt >= silenceMs && now-speechStartedAt >= 350) finish();
+    }, 50);
+    const hardTimer = setTimeout(() => finish(), maxMs);
+    offlineVadStop = () => finish();
+    recorder.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+    recorder.onerror = () => finish(new Error('Microphone recording failed.'));
+    recorder.onstop = () => {
+      if (!settled) { settled = true; if (vadTimer) clearInterval(vadTimer); if (hardTimer) clearTimeout(hardTimer); }
+      offlineVadStop = null;
+      const blob = new Blob(chunks, {type:recorder.mimeType || 'audio/webm'});
+      resolve(blob);
+    };
+    try { recorder.start(200); } catch (e) { finish(new Error('Could not start microphone recording: ' + e.message)); }
+  });
+}
+async function offlinePushToTalk() {
+  if (offlineBusy) return;
+  offlineBusy = true; offlinePttBtn.disabled = true;
+  try {
+    offlineSetStatus('Listening locally… speak now', true);
+    const blob = await offlineRecordUntilSilence({maxMs:15000, startTimeoutMs:8000, silenceMs:voiceSettings.silenceMs});
+    if (!blob || blob.size < 1200) { offlineSetStatus('No speech detected. Try again.', false); return; }
+    offlineSetStatus('Transcribing locally with fast Whisper…', true);
+    const transcript = await offlineTranscribe(blob);
+    if (!transcript) { offlineSetStatus('No speech detected. Try again.', false); return; }
+    transcriptDisplay.textContent = '"' + transcript + '"';
+    handleVoiceCommand(transcript);
+  } catch (e) { offlineSetStatus(e.message || 'Offline voice error.', false); toast(e.message || 'Offline voice error.', 'err'); }
+  finally { offlineBusy = false; offlinePttBtn.disabled = false; }
+}
+function stopOfflineWake() {
+  offlineWakeEnabled = false; voiceEnabled = false; recognitionRestart = false;
+  if (offlineVadStop) { try { offlineVadStop(); } catch {} }
+  if (offlineWakeTimer) { clearTimeout(offlineWakeTimer); offlineWakeTimer = null; }
+  offlineWakeBtn.textContent = 'OFFLINE WAKE';
+  offlineWakeBtn.classList.remove('active');
+  if (offlineStream) { offlineStream.getTracks().forEach(t => t.stop()); offlineStream = null; }
+  offlineSetStatus('Offline listening stopped.', false);
+  voiceBtn.classList.remove('listening'); voiceBtn.setAttribute('aria-pressed','false');
+  if (orbState === 'listening') setOrbState('idle');
+}
+async function offlineWakeTick() {
+  if (!offlineWakeEnabled || offlineBusy) return;
+  if (offlineAssistantSpeaking || anshuIsSpeaking) { offlineWakeTimer = setTimeout(offlineWakeTick, 250); return; }
+  offlineBusy = true;
+  try {
+    offlineSetStatus(offlineRequireWake ? 'Local wake listening… say “Hey ANSHU”' : 'Listening locally… speak naturally', true);
+    const blob = await offlineRecordUntilSilence({maxMs:12000, startTimeoutMs:4500, silenceMs:voiceSettings.silenceMs});
+    if (blob && blob.size >= 1200) {
+      offlineSetStatus('Recognizing speech locally…', true);
+      const transcript = await offlineTranscribe(blob);
+      if (transcript) {
+        const clean = transcript.toLowerCase().replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
+        const match = clean.match(/(?:hey|okay|ok)\s+anshu|anshu/);
+        if (!offlineRequireWake) {
+          offlineSetStatus('“' + transcript + '”', true);
+          handleVoiceCommand(transcript);
+        } else if (match) {
+          const command = clean.slice(match.index + match[0].length).trim();
+          if (command) {
+            offlineWakeArmedUntil = 0;
+            offlineSetStatus('Wake phrase detected. Processing…', true);
+            handleVoiceCommand(command);
+          } else {
+            offlineWakeArmedUntil = Date.now() + 9000;
+            offlineSetStatus('ANSHU heard you. Speak your command…', true);
+          }
+        } else if (Date.now() < offlineWakeArmedUntil) {
+          offlineWakeArmedUntil = 0;
+          offlineSetStatus('“' + transcript + '”', true);
+          handleVoiceCommand(transcript);
+        }
+      }
+    }
+  } catch (e) {
+    offlineSetStatus(e.message || 'Offline voice error.', false);
+    toast(e.message || 'Offline voice error.', 'err');
+    stopOfflineWake(); return;
+  } finally { offlineBusy = false; }
+  if (offlineWakeEnabled) offlineWakeTimer = setTimeout(offlineWakeTick, 80);
+}
+function startOfflineListening(requireWake = false) {
+  if (offlineWakeEnabled) return;
+  offlineRequireWake = !!requireWake;
+  offlineGetStream().then(() => {
+    offlineWakeEnabled = true;
+    voiceEnabled = true; recognitionRestart = false;
+    voiceBtn.classList.add('listening');
+    voiceBtn.setAttribute('aria-pressed','true');
+    setOrbState('listening');
+    offlineWakeTick();
+  }).catch(e => {
+    voiceEnabled = false;
+    voiceBtn.classList.remove('listening');
+    voiceBtn.setAttribute('aria-pressed','false');
+    offlineSetStatus(e.message || 'Could not access microphone.', false);
+    toast(e.message || 'Could not access microphone.', 'err');
+  });
+}
+offlinePttBtn.onclick = offlinePushToTalk;
+offlineWakeBtn.onclick = async () => {
+  if (offlineWakeEnabled) { stopOfflineWake(); return; }
+  try {
+    await offlineGetStream();
+    offlineWakeEnabled = true; voiceEnabled = true; offlineRequireWake = true;
+    setOrbState('listening');
+    voiceBtn.classList.add('listening'); voiceBtn.setAttribute('aria-pressed','true');
+    offlineWakeBtn.textContent = 'STOP OFFLINE WAKE';
+    offlineWakeBtn.classList.add('active');
+    offlineWakeTick();
+  } catch (e) { toast(e.message || 'Could not access microphone.', 'err'); }
+};
+
+function handleVoiceCommand(raw) {
+  const command = raw.toLowerCase().replace(/[^a-z0-9\s.-]/g,' ').replace(/\s+/g,' ').trim();
+  if (!command) return;
+
+  // Phase 15: fast local UI and voice controls. These run without an LLM call.
+  if (/\b(stop speaking|stop talking|be quiet|quiet anshu|silence)\b/.test(command)) {
+    stopSpeaking();
+    return;
+  }
+  if (/\b(cancel computer task|cancel computer plan|cancel pending task)\b/.test(command)) {
+    const cancelled = cancelPendingAgentPlan();
+    speakANSHU(cancelled ? 'The pending computer plan is cancelled. No planned actions were executed.' : 'There is no pending plan to cancel, or an action is already running.');
+    return;
+  }
+  if (routeVoiceComputerTask(raw)) return;
+  if (/\b(open|show|switch to|go to|take me to)\s+(the\s+)?(robotic lab|robot lab|robotics lab|lab)\b/.test(command)) {
+    showPage('lab');
+    speakANSHU('Opening the robotic lab.');
+    return;
+  }
+  if (/\b(open|show|switch to|go to|take me to)\s+(the\s+)?(anshu|assistant|chat|home)\b/.test(command)) {
+    showPage('anshu');
+    speakANSHU('Back to the ANSHU assistant.');
+    return;
+  }
+  const panelCommands = [
+    {name:'desktop', pattern:/\b(open|show|display)\s+(the\s+)?(desktop tools|desktop panel|desktop control)\b/, reply:'Opening Desktop Tools.'},
+    {name:'memory', pattern:/\b(open|show|display)\s+(the\s+)?(memory|memories|reminders|notes)\b/, reply:'Opening Memory and Reminders.'},
+    {name:'vision', pattern:/\b(open|show|display)\s+(the\s+)?(vision|camera|object detection)\b/, reply:'Opening Vision tools.'},
+    {name:'hand', pattern:/\b(open|show|display|enable)\s+(the\s+)?(hand control|hand gestures|gesture control)\b/, reply:'Opening Hand Control.'}
+  ];
+  const panelCommand = panelCommands.find(item => item.pattern.test(command));
+  if (panelCommand) {
+    if (activeCap !== panelCommand.name) toggleCapPanel(panelCommand.name);
+    speakANSHU(panelCommand.reply);
+    return;
+  }
+
+  // Robot commands
+  if (command.includes('emergency stop') || command === 'stop' || command.includes('stop robot') || command.includes('halt')) {
+    labStop(); speakANSHU('Emergency stop engaged. Robot is stopped.'); return;
+  }
+  if (command.includes('start robot') || command.includes('initialize robot') || command.includes('wake up')) {
+    labInit(); speakANSHU('Scout One initialized. Ready for commands.'); return;
+  }
+  if (command.includes('autonomous') || command.includes('auto navigation') || command.includes('avoid obstacles')) {
+    labSetAuto(true); speakANSHU('Autonomous navigation enabled.'); return;
+  }
+  if (command.includes('manual mode')) { labSetAuto(false); speakANSHU('Manual control selected.'); return; }
+  if (command.includes('start mission') || command.includes('begin mission')) { labMission(); speakANSHU('Mission started.'); return; }
+  // Directional commands are handled locally to avoid LLM direction confusion.
+  if (/\b(don't|do not|never)\s+(move|go|drive)\s+(back|backward|backwards|reverse)\b/.test(command)) {
+    labStop(); speakANSHU('Okay, I will not move backward.'); return;
+  }
+  if (/\b(move|go|drive|roll|reverse|reversing|back up|back|backward|backwards)\b/.test(command) &&
+      /\b(back|backward|backwards|reverse|reversing|back up|backward direction)\b/.test(command)) {
+    driveBriefly('s',900); speakANSHU('Moving backward.'); return;
+  }
+  if (/\b(move|go|drive|roll)\s+(forward|ahead)\b/.test(command) || command === 'forward' || command === 'ahead') {
+    driveBriefly('w',1100); speakANSHU('Moving forward.'); return;
+  }
+  if (command.includes('turn left') || command === 'left') { driveBriefly('a',650); speakANSHU('Turning left.'); return; }
+  if (command.includes('turn right') || command === 'right') { driveBriefly('d',650); speakANSHU('Turning right.'); return; }
+
+  // Desktop app commands — launchApp displays a confirmation modal.
+  const appCmds = [
+    ['notepad', ['open notepad','launch notepad','start notepad']],
+    ['calculator', ['open calculator','launch calculator','start calculator','open calc']],
+    ['paint', ['open paint','launch paint','start paint']],
+    ['file explorer', ['open file explorer','launch file explorer','start file explorer','open explorer']],
+    ['task manager', ['open task manager','launch task manager','start task manager']],
+  ];
+  const appMatch = appCmds.find(([app,phrases]) => phrases.some(p => command === p || command.startsWith(p+' ')));
+  if (appMatch) {
+    launchApp(appMatch[0]); speakANSHU('I can launch '+appMatch[0]+'. Please confirm on screen.'); return;
+  }
+
+  // File search synonyms. Search is local and limited to configured personal folders.
+  const searchPatterns = [
+    /^(?:please\s+)?(?:search|find|look for|locate)\s+(?:my\s+)?files?\s+(?:for|named|called)\s+(.+)$/i,
+    /^(?:please\s+)?(?:search|find|look for|locate)\s+(?:my\s+)?(.+?)\s+files?$/i,
+    /^(?:please\s+)?(?:search|find|look for|locate)\s+(?:my\s+)?(.+)$/i,
+    /^(?:please\s+)?(?:search|find|look for|locate)\s+(.+)$/i
+  ];
+  let q = '';
+  const searchIntent = /\b(search|find|look for|locate)\b/i.test(command);
+  if (searchIntent) {
+    for (const pattern of searchPatterns) {
+      const match = raw.trim().match(pattern);
+      if (match && match[1]) { q = match[1].trim(); break; }
+    }
+  }
+  // Common conversational phrasing such as “where is my resume PDF?”
+  if (!q && /\b(where is|where's|help me find|i need to find)\b/i.test(command) &&
+      /\b(resume|cv|curriculum vitae)\b/i.test(command)) q = 'resume';
+  q = q.replace(/\b(?:please|for me|on my computer|on this computer|in my computer|pdf format|dot pdf|pdf file|pdf)\b/gi, ' ')
+       .replace(/\s+/g,' ').trim();
+  if (searchIntent && /\b(resume|cv|curriculum vitae)\b/i.test(command) && !q) q = 'resume';
+  if (q.length >= 2 && (searchIntent || /\bresume\b/i.test(command))) {
+    if (typeof activeCap !== 'undefined' && activeCap !== 'desktop') toggleCapPanel('desktop');
+    $('fileQuery').value = q;
+    const resultsBox = $('fileResults');
+    if (resultsBox) resultsBox.textContent = 'Searching your personal folders for "' + q + '"…';
+    speakANSHU('Searching for ' + q + '. Results will appear in the conversation and Desktop Tools.');
+    doFileSearch();
+    return;
+  }
+
+  if (command.startsWith('remember that ') || command.startsWith('remember ')) {
+    const memory = raw.replace(/^remember( that)?\s*/i,'').trim();
+    if (memory) { saveMemory(memory); speakANSHU('Saved to local memory.'); return; }
+  }
+  if (command.startsWith('remind me to ')) {
+    const reminder = raw.replace(/^remind me to\s*/i,'').trim();
+    if (reminder) { saveReminder(reminder, ''); speakANSHU('Reminder saved.'); return; }
+  }
+
+  // Fall through to AI for general conversation.
+  setOrbState('processing');
+  sendMessage(raw, true);
+}
+
+/* ═══ CAPABILITY PANELS ══════════════════════════════════════ */
+const capMap = {
+  vision: { area: 'vision-area', btn: 'cap-vision' },
+  memory: { area: 'memory-area', btn: 'cap-memory' },
+  desktop: { area: 'desktop-area', btn: 'cap-desktop' },
+  hand: { area: 'hand-area', btn: 'cap-hand' },
+};
+let activeCap = null;
+
+function toggleCapPanel(name) {
+  if (activeCap === name) {
+    // Close current
+    document.getElementById(capMap[name].area).classList.remove('open');
+    document.getElementById(capMap[name].btn).classList.remove('active');
+    activeCap = null;
+    return;
+  }
+  // Close any open
+  if (activeCap && capMap[activeCap]) {
+    document.getElementById(capMap[activeCap].area).classList.remove('open');
+    document.getElementById(capMap[activeCap].btn).classList.remove('active');
+  }
+  document.getElementById(capMap[name].area).classList.add('open');
+  document.getElementById(capMap[name].btn).classList.add('active');
+  activeCap = name;
+
+  // Load data for panels
+  if (name === 'memory') { loadMemory(); loadReminders(); }
+}
+
+// Capability buttons in left sidebar
+$('cap-chat').onclick = () => {
+  // Just close other panels & focus composer
+  if (activeCap) {
+    document.getElementById(capMap[activeCap].area).classList.remove('open');
+    document.getElementById(capMap[activeCap].btn).classList.remove('active');
+    activeCap = null;
+  }
+  document.querySelectorAll('.cap-btn').forEach(b => b.classList.remove('active'));
+  $('cap-chat').classList.add('active');
+  chatInput.focus();
+};
+
+Object.entries(capMap).forEach(([name, { btn }]) => {
+  const b = document.getElementById(btn);
+  if (b) b.onclick = () => toggleCapPanel(name);
+});
+
+// Close buttons
+$('vision-area-close').onclick = () => toggleCapPanel('vision');
+$('memory-area-close').onclick = () => toggleCapPanel('memory');
+$('desktop-area-close').onclick = () => toggleCapPanel('desktop');
+$('hand-area-close').onclick = () => toggleCapPanel('hand');
+$('cam-btn').onclick = () => toggleCapPanel('vision');
+
+/* ═══ VISION / OBJECT DETECTION ═════════════════════════════ */
+let visionStream = null, cocoModel = null, visionRunning = false;
+const visionVideo = $('visionVideo');
+const visionOverlayCanvas = $('visionOverlay');
+const visionCtx = visionOverlayCanvas.getContext('2d');
+const visionObjects = $('vision-objects');
+
+$('vision-start-btn').onclick = startVision;
+$('vision-stop-btn').onclick = stopVision;
+$('vision-ask-btn').onclick = visionAsk;
+$('vision-analyze-btn').onclick = visionAnalyze;
+
+async function startVision() {
+  try {
+    visionObjects.textContent = 'Requesting camera permission…';
+    visionStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+    visionVideo.srcObject = visionStream;
+    await visionVideo.play();
+    visionObjects.textContent = 'Loading object detection model…';
+    if (!window.cocoSsd || !window.tf) throw new Error('TF libraries did not load. Check internet and refresh.');
+    cocoModel = await cocoSsd.load();
+    visionRunning = true;
+    visionObjects.textContent = 'Vision online. Detecting objects.';
+    detectObjects();
+    toast('Camera and object detection started.', 'ok');
+  } catch(e) {
+    visionObjects.textContent = 'Vision error: ' + e.message;
+    stopVision();
+  }
+}
+
+let lastDetected = [];
+async function detectObjects() {
+  if (!visionRunning) return;
+  try {
+    if (visionVideo.readyState >= 2) {
+      const preds = await cocoModel.detect(visionVideo);
+      lastDetected = preds;
+      const w = visionVideo.videoWidth, h = visionVideo.videoHeight;
+      if (w && h) {
+        visionOverlayCanvas.width = w; visionOverlayCanvas.height = h;
+        visionCtx.clearRect(0,0,w,h);
+        visionCtx.lineWidth = Math.max(2, w/400);
+        visionCtx.font = `${Math.max(13, w/50)}px sans-serif`;
+        preds.forEach(p => {
+          const [x,y,bw,bh] = p.bbox;
+          visionCtx.strokeStyle = 'var(--cyan)'; visionCtx.fillStyle = 'rgba(93,232,255,.75)';
+          visionCtx.strokeRect(x,y,bw,bh);
+          const label = `${p.class} ${Math.round(p.score*100)}%`;
+          const tw = visionCtx.measureText(label).width + 12;
+          visionCtx.fillRect(x, Math.max(0,y-26), tw, 24);
+          visionCtx.fillStyle = '#03131d';
+          visionCtx.fillText(label, x+6, Math.max(17,y-9));
+        });
+      }
+      visionObjects.textContent = preds.length
+        ? preds.map(p => `${p.class} — ${Math.round(p.score*100)}%`).join(' · ')
+        : 'No recognizable objects in frame.';
+    }
+  } catch(e) { visionObjects.textContent = 'Detection error: ' + e.message; }
+  if (visionRunning) setTimeout(detectObjects, 250);
+}
+
+function stopVision() {
+  visionRunning = false;
+  if (visionStream) { visionStream.getTracks().forEach(t => t.stop()); visionStream = null; }
+  visionVideo.srcObject = null;
+  visionCtx.clearRect(0,0,visionOverlayCanvas.width, visionOverlayCanvas.height);
+  visionObjects.textContent = 'Vision stopped.';
+}
+
+function visionAsk() {
+  const summary = lastDetected.length
+    ? lastDetected.map(p => p.class + ' (' + Math.round(p.score*100) + '%)').join(', ')
+    : 'No objects detected yet';
+  chatInput.value = 'My camera currently detects: ' + summary + '. Explain cautiously; these labels are not a full scene analysis.';
+  toggleCapPanel('vision'); // close vision panel
+  chatInput.focus();
+}
+
+async function visionAnalyze() {
+  const visionAnswer = document.querySelector('#conversation');
+  try {
+    if (!visionVideo.srcObject || visionVideo.readyState < 2) throw new Error('Start the camera first.');
+    const question = $('visionQuestion').value.trim() || 'What is visible in this image?';
+    appendMsg('user', '[📷 Camera frame sent] ' + question);
+    setOrbState('processing');
+    const snap = document.createElement('canvas');
+    snap.width = Math.min(visionVideo.videoWidth, 960);
+    snap.height = Math.round(visionVideo.videoHeight * (snap.width / visionVideo.videoWidth));
+    snap.getContext('2d').drawImage(visionVideo, 0, 0, snap.width, snap.height);
+    const image = snap.toDataURL('image/jpeg', 0.78);
+    const res = await fetch('/api/vision', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({image, question}) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Vision analysis failed.');
+    appendMsg('anshu', data.reply);
+    speakANSHU(data.reply);
+  } catch(e) {
+    appendMsg('anshu', 'Vision analysis error: ' + e.message + '\n\nFirst run: ollama pull qwen2.5vl:3b, then restart the server.', true);
+    setOrbState('error');
+  }
+}
+
+/* ═══ MEMORY / REMINDERS ═════════════════════════════════════ */
+async function api(path, body) {
+  const res = await fetch(path, {
+    method: body ? 'POST' : 'GET',
+    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const d = await res.json();
+  if (!res.ok) throw new Error(d.error || 'Request failed');
+  return d;
+}
+
+let cachedMemories = [];
+function renderMemoryList() {
+  const out = $('memoryList');
+  const query = ($('memorySearch')?.value || '').trim().toLowerCase();
+  const filtered = cachedMemories.filter(m => !query || String(m.text || '').toLowerCase().includes(query));
+  $('memoryCount').textContent = `${cachedMemories.length} saved ${cachedMemories.length === 1 ? 'memory' : 'memories'}${query ? ` · ${filtered.length} shown` : ''}`;
+  out.replaceChildren();
+  if (!filtered.length) {
+    out.textContent = cachedMemories.length ? 'No memories match your search.' : 'No saved memories yet.';
+    return;
+  }
+  filtered.forEach(m => {
+    const row = el('div', {className:'mem-item'});
+    const content = el('div', {className:'mem-item-text'});
+    const txt = el('div', {}, m.text);
+    const meta = el('div', {className:'mem-item-meta'}, m.updated ? `Updated ${m.updated}` : (m.created || 'Saved locally'));
+    content.append(txt, meta);
+    const actions = el('div', {style:'display:flex;gap:4px;flex-shrink:0'});
+    const edit = el('button', {className:'btn secondary btn-sm', type:'button'}, 'Edit');
+    edit.title = 'Edit this memory';
+    edit.onclick = () => {
+      const editor = el('textarea', {className:'field', style:'width:100%;min-height:58px;font-size:12px'});
+      editor.value = m.text;
+      const save = el('button', {className:'btn btn-sm', type:'button'}, 'Save');
+      const cancel = el('button', {className:'btn secondary btn-sm', type:'button'}, 'Cancel');
+      const editorWrap = el('div', {style:'display:grid;gap:6px;width:100%'});
+      const controls = el('div', {style:'display:flex;gap:6px'});
+      controls.append(save, cancel); editorWrap.append(editor, controls);
+      row.replaceChildren(editorWrap);
+      save.onclick = async () => {
+        const value = editor.value.trim();
+        if (!value) { toast('Memory cannot be empty.', 'err'); return; }
+        try { await api('/api/desktop/memory', {action:'update', id:m.id, text:value}); toast('Memory updated.', 'ok'); await loadMemory(); }
+        catch(e) { toast(e.message, 'err'); }
+      };
+      cancel.onclick = renderMemoryList;
+      editor.focus();
+    };
+    const del = el('button', {className:'btn secondary btn-sm', type:'button'}, '×');
+    del.title = 'Delete memory';
+    del.onclick = async () => {
+      if (!confirm('Delete this saved memory?')) return;
+      try { await api('/api/desktop/memory', {action:'delete', id:m.id}); await loadMemory(); }
+      catch(e) { toast(e.message, 'err'); }
+    };
+    actions.append(edit, del); row.append(content, actions); out.appendChild(row);
+  });
+}
+async function loadMemory() {
+  const out = $('memoryList');
+  try {
+    const d = await api('/api/desktop/memory');
+    cachedMemories = Array.isArray(d.memory) ? d.memory : [];
+    renderMemoryList();
+  } catch(e) { out.textContent = e.message; }
+}
+$('memorySearch').addEventListener('input', renderMemoryList);
+async function loadContextControls() {
+  try {
+    const d = await api('/api/desktop/context');
+    $('memoryUseToggle').checked = d.useMemories !== false;
+    const summary = String(d.summary || '').trim();
+    $('conversationSummaryStatus').textContent = summary ? `Local conversation summary ready · updated ${d.summaryUpdated || 'recently'}` : 'Local conversation summary will be created after longer chats.';
+  } catch (e) { $('conversationSummaryStatus').textContent = 'Context settings unavailable: ' + e.message; }
+}
+$('memoryUseToggle').addEventListener('change', async () => {
+  const toggle = $('memoryUseToggle'); toggle.disabled = true;
+  try { await api('/api/desktop/context', {useMemories: toggle.checked}); toast(toggle.checked ? 'Relevant saved memories enabled.' : 'Saved memories excluded from AI replies.', 'ok'); }
+  catch (e) { toggle.checked = !toggle.checked; toast(e.message, 'err'); }
+  finally { toggle.disabled = false; }
+});
+loadContextControls();
+$('memoryClearAll').onclick = async () => {
+  if (!cachedMemories.length) return;
+  if (!confirm('Permanently delete all saved memories? This cannot be undone.')) return;
+  try { await api('/api/desktop/memory', {action:'clear'}); await loadMemory(); toast('All saved memories cleared.', 'ok'); }
+  catch(e) { toast(e.message, 'err'); }
+};
+
+async function saveMemory(text) {
+  try {
+    await api('/api/desktop/memory', { text });
+    toast('Memory saved.', 'ok');
+    loadMemory();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+$('memorySave').onclick = async () => {
+  const text = $('memoryText').value.trim();
+  if (!text) return;
+  await saveMemory(text);
+  $('memoryText').value = '';
+};
+
+async function loadReminders() {
+  const out = $('reminderList');
+  try {
+    const d = await api('/api/desktop/reminders');
+    out.replaceChildren();
+    if (!d.reminders.length) { out.textContent = 'No reminders yet.'; return; }
+    d.reminders.forEach(r => {
+      const row = el('div', {className:'mem-item'});
+      const txt = el('div', {className:'mem-item-text'}, (r.done ? '✓ ' : '◷ ') + r.text + (r.due ? ' · ' + r.due : ''));
+      if (r.done) txt.style.textDecoration = 'line-through';
+      const toggle = el('button', {className:'btn secondary btn-sm'}, r.done ? '↩' : '✓');
+      toggle.title = r.done ? 'Reopen' : 'Mark done';
+      toggle.onclick = async () => { await api('/api/desktop/reminders', {action:'toggle', id:r.id}); loadReminders(); };
+      const del = el('button', {className:'btn secondary btn-sm'}, '×');
+      del.onclick = async () => { if(!confirm('Delete reminder?')) return; await api('/api/desktop/reminders', {action:'delete', id:r.id}); loadReminders(); };
+      row.append(txt, toggle, del);
+      out.appendChild(row);
+    });
+  } catch(e) { out.textContent = e.message; }
+}
+
+async function saveReminder(text, due) {
+  try {
+    await api('/api/desktop/reminders', { text, due });
+    toast('Reminder saved.', 'ok');
+    loadReminders();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+$('reminderAdd').onclick = async () => {
+  const text = $('reminderText').value.trim();
+  const due = $('reminderDue').value;
+  if (!text) return;
+  await saveReminder(text, due);
+  $('reminderText').value = '';
+  $('reminderDue').value = '';
+};
+
+/* ═══ PHASE 24 VOICE-CONTROLLED COMPUTER WORKFLOWS ════════════ */
+function routeVoiceComputerTask(rawCommand) {
+  const raw = String(rawCommand || '').trim();
+  // Normalize punctuation and tolerate wake words being included by different browser modes.
+  const normalized = raw.toLowerCase()
+    .replace(/^(?:(?:hey|okay|ok)\s+)?anshu[\s,.:;!-]*/i, '')
+    .replace(/[^a-z0-9\s.-]/g, ' ').replace(/\s+/g, ' ').trim();
+  let task = '';
+
+  // Project names are passed to the strict server-side project matcher; no fuzzy local folder opening.
+  // Supports: “open AgroMind in VS Code”, “open the AgroMind project in VS Code”,
+  // and natural variants like “please open my AgroMind project in Visual Studio Code”.
+  let match = normalized.match(/^(?:please )?(?:open|launch) (?:the )?(.+?) (?:project )?in (?:vs code|vscode|visual studio code)$/i);
+  if (match) {
+    const projectName = match[1].replace(/^my\s+/i, '').replace(/\s+project$/i, '').trim();
+    if (projectName && !/^(?:vs code|vscode|visual studio code)$/i.test(projectName)) {
+      task = 'find my ' + projectName + ' project, open it in VS Code, and tell me what files it contains';
+    }
+  }
+  if (!task) {
+    match = normalized.match(/^(?:please )?(?:find|locate|open|show me) (?:my )?(.+?) project(?: folder)?[,]? (?:and )?(?:open (?:it )?in|open in) (?:vs code|vscode|visual studio code)(?:[,]? (?:and )?(?:tell me|show me|list) (?:what )?files(?: it contains)?)?$/i);
+    if (match && match[1]) task = 'find my ' + match[1].trim() + ' project, open it in VS Code, and tell me what files it contains';
+  }
+  // Last-resort deterministic route for clear project + VS Code intents. Never send these to chat.
+  if (!task && /\b(?:open|launch)\b/i.test(normalized) && /\b(?:vs code|vscode|visual studio code)\b/i.test(normalized)) {
+    match = normalized.match(/^(?:please )?(?:open|launch) (?:the )?(.+?) (?:project )?in (?:vs code|vscode|visual studio code)$/i);
+    if (match && match[1]) {
+      const projectName = match[1].replace(/^my\s+/i, '').replace(/\s+project$/i, '').trim();
+      if (projectName && projectName.length <= 80) task = 'find my ' + projectName + ' project, open it in VS Code, and tell me what files it contains';
+    }
+  }
+
+  // Directly pass only command forms supported by the deterministic, confirmation-gated planner.
+  if (!task && /^(?:please )?(?:open|visit|go to) (?:the )?(?:website )?.+$/i.test(normalized)) task = raw;
+  if (!task && /^(?:please )?(?:find|search for|search) (?:all )?(?:the )?(?:python|python code|py|\.py|javascript|js|typescript|ts|images?|photos|documents?|pdf|spreadsheets?|presentations?|videos?|audio|music|archives?) files?(?: in my folders)?$/i.test(normalized)) task = raw;
+  if (!task && /^(?:please )?(?:search files for|find files for|find file|search for file|find|search) .{2,}$/i.test(normalized)) task = raw;
+  if (!task && /^(?:please )?(?:open|show) folder .{2,}$/i.test(normalized)) task = raw;
+  if (!task && /^(?:please )?(?:open|launch|start) (?:notepad|calculator|calc|paint|file explorer|explorer|task manager|vscode|vs code|visual studio code) and (?:then )?(?:search files for|find files for|find|search for) .{2,}$/i.test(normalized)) task = raw;
+
+  if (!task) {
+    // If the user clearly asked for a computer action, explain the supported phrasing rather than
+    // letting the general chatbot claim it cannot control the computer.
+    const computerIntent = /\b(open|launch|find|locate|search)\b/i.test(normalized) &&
+      /\b(vs code|vscode|visual studio code|project folder|computer|file explorer|downloads|documents)\b/i.test(normalized);
+    if (computerIntent) {
+      if (typeof activeCap !== 'undefined' && activeCap !== 'desktop') toggleCapPanel('desktop');
+      if (agentTaskInput) agentTaskInput.value = raw;
+      if (agentPlanPreview) agentPlanPreview.textContent = 'I recognized a computer-control request, but could not safely map it to a supported action. Try “open AgroMind in VS Code” or “find my AgroMind project, open it in VS Code, and tell me what files it contains”. Nothing was executed.';
+      speakANSHU('I recognized a computer task, but need a clearer command. Nothing was executed.');
+      return true;
+    }
+    return false;
+  }
+  if (typeof activeCap !== 'undefined' && activeCap !== 'desktop') toggleCapPanel('desktop');
+  if (agentTaskInput) agentTaskInput.value = task;
+  if (typeof createAgentPlan === 'function') {
+    createAgentPlan();
+    speakANSHU('I prepared a computer task plan. Review it on screen and confirm before I take action.');
+  } else {
+    speakANSHU('The computer task panel is not ready yet. Please try again.');
+  }
+  return true;
+}
+
+function cancelPendingAgentPlan() {
+  agentPlanRequestId++; // Invalidate any plan request that is still in flight.
+  if (typeof pendingAgentPlanToken !== 'undefined' && pendingAgentPlanToken) {
+    pendingAgentPlanToken = null;
+    if (agentPlanPreview) {
+      agentPlanPreview.replaceChildren();
+      agentPlanPreview.textContent = 'Plan cancelled by voice command. Nothing was executed.';
+    }
+    if (agentOutcomeResults) agentOutcomeResults.replaceChildren();
+    return true;
+  }
+  if (agentPlanPreview && /executing approved steps/i.test(agentPlanPreview.textContent || '')) {
+    agentPlanPreview.textContent = 'The task is already executing. Voice cancellation prevents pending plans, but cannot safely interrupt an action already in progress.';
+    return false;
+  }
+  if (agentPlanPreview && /building a safe, predefined plan/i.test(agentPlanPreview.textContent || '')) {
+    agentPlanPreview.textContent = 'Plan request cancelled by voice command. Nothing was executed.';
+    return true;
+  }
+  if (agentPlanPreview) agentPlanPreview.textContent = 'No pending computer plan to cancel.';
+  return false;
+}
+
+/* ═══ PHASE 21.1 COMPUTER CONTROL AGENT ═══════════════════════ */
+let pendingAgentPlanToken = null;
+let agentPlanRequestId = 0;
+const agentTaskInput = $('agentTaskInput');
+const agentPlanPreview = $('agentPlanPreview');
+const agentOutcomeResults = $('agentOutcomeResults');
+
+function renderAgentOutcomes(outcomes) {
+  if (!agentOutcomeResults) return;
+  agentOutcomeResults.replaceChildren();
+  (outcomes || []).forEach(outcome => {
+    const row = el('div', {}, (outcome.ok ? '✓ ' : '⚠ ') + outcome.step + ': ' + outcome.message);
+    agentOutcomeResults.appendChild(row);
+    if (Array.isArray(outcome.results) && outcome.results.length) {
+      outcome.results.slice(0, 12).forEach(item => {
+        const line = el('div', {style:'margin:4px 0 4px 12px;overflow-wrap:anywhere'});
+        const openBtn = el('button', {className:'btn secondary btn-sm', type:'button'}, 'Open ' + item.name);
+        openBtn.addEventListener('click', () => openFoundFile(item.path, item.name));
+        line.appendChild(el('span', {}, item.name + ' — '));
+        line.appendChild(openBtn);
+        agentOutcomeResults.appendChild(line);
+      });
+    }
+  });
+}
+
+async function createAgentPlan() {
+  const requestId = ++agentPlanRequestId;
+  const task = (agentTaskInput?.value || '').trim();
+  if (!task) {
+    agentPlanPreview.textContent = 'Type a supported task first.';
+    return;
+  }
+  pendingAgentPlanToken = null;
+  agentOutcomeResults.replaceChildren();
+  agentPlanPreview.textContent = 'Building a safe, predefined plan…';
+  try {
+    const data = await api('/api/agent/plan', {task});
+    if (requestId !== agentPlanRequestId) return;
+    pendingAgentPlanToken = data.token;
+    agentPlanPreview.replaceChildren();
+    agentPlanPreview.appendChild(el('div', {}, 'Review this plan:'));
+    const list = el('ol', {style:'padding-left:20px;margin:5px 0'});
+    (data.steps || []).forEach(step => list.appendChild(el('li', {}, step)));
+    agentPlanPreview.appendChild(list);
+    agentPlanPreview.appendChild(el('div', {style:'color:var(--text-dim);margin-bottom:8px'}, data.notice || 'Predefined actions only.'));
+    const execute = el('button', {className:'btn btn-sm', type:'button'}, 'Confirm and run');
+    execute.addEventListener('click', executeAgentPlan);
+    const cancel = el('button', {className:'btn secondary btn-sm', type:'button', style:'margin-left:6px'}, 'Cancel');
+    cancel.addEventListener('click', () => {
+      pendingAgentPlanToken = null;
+      agentPlanPreview.textContent = 'Plan cancelled. Nothing was executed.';
+    });
+    agentPlanPreview.appendChild(execute);
+    agentPlanPreview.appendChild(cancel);
+  } catch (e) {
+    if (requestId !== agentPlanRequestId) return;
+    agentPlanPreview.textContent = e.message;
+  }
+}
+
+async function executeAgentPlan() {
+  if (!pendingAgentPlanToken) {
+    agentPlanPreview.textContent = 'No valid plan to execute. Create a new plan.';
+    return;
+  }
+  const token = pendingAgentPlanToken;
+  pendingAgentPlanToken = null;
+  agentPlanPreview.textContent = 'Executing approved steps…';
+  agentOutcomeResults.replaceChildren();
+  try {
+    const data = await api('/api/agent/execute', {token});
+    renderAgentOutcomes(data.outcomes || []);
+    agentPlanPreview.textContent = data.ok ? 'Task finished. Review the results below.' : 'Task finished with an issue. Review the results below.';
+  } catch (e) {
+    agentPlanPreview.textContent = e.message;
+  }
+}
+if (agentTaskInput && $('agentPlanButton')) {
+  $('agentPlanButton').addEventListener('click', createAgentPlan);
+  agentTaskInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); createAgentPlan(); }
+  });
+}
+
+/* ═══ DESKTOP TOOLS ══════════════════════════════════════════ */
+document.querySelectorAll('[data-app]').forEach(btn => {
+  btn.onclick = () => launchApp(btn.dataset.app);
+});
+
+async function launchApp(app) {
+  showModal(
+    'Launch Application',
+    `Allow ANSHU to launch ${app}?`,
+    [
+      { label: 'Launch', cls: 'btn', fn: async () => {
+        const out = $('desktop-app-status');
+        out.textContent = 'Launching…';
+        try {
+          const d = await api('/api/desktop/launch', { app });
+          out.textContent = d.message;
+          toast(d.message, 'ok');
+        } catch(e) { out.textContent = e.message; toast(e.message, 'err'); }
+      }},
+      { label: 'Cancel', cls: 'btn secondary', fn: () => {} }
+    ]
+  );
+}
+
+
+/* PHASE 14 — safe desktop command palette. No arbitrary shell execution. */
+const desktopCommandInput = $('desktopCommandInput');
+const desktopCommandStatus = $('desktopCommandStatus');
+function runDesktopCommand() {
+  const raw = (desktopCommandInput?.value || '').trim();
+  const command = raw.toLowerCase().replace(/\s+/g, ' ');
+  if (!command) {
+    desktopCommandStatus.textContent = 'Type an allowed command first.';
+    return;
+  }
+  const appCmds = [
+    ['notepad', ['open notepad', 'launch notepad', 'start notepad']],
+    ['calculator', ['open calculator', 'launch calculator', 'start calculator']],
+    ['paint', ['open paint', 'launch paint', 'start paint']],
+    ['file explorer', ['open file explorer', 'launch file explorer', 'start file explorer', 'open explorer']],
+    ['task manager', ['open task manager', 'launch task manager', 'start task manager']]
+  ];
+  const matched = appCmds.find(([app, phrases]) =>
+    phrases.some(phrase => command === phrase || command.startsWith(phrase + ' '))
+  );
+  if (matched) {
+    desktopCommandStatus.textContent = 'Waiting for your confirmation to launch ' + matched[0] + '.';
+    launchApp(matched[0]);
+    return;
+  }
+  const searchMatch = raw.match(/^(?:search files for|find file|search for file)\s+(.+)$/i);
+  if (searchMatch && searchMatch[1].trim().length >= 2) {
+    $('fileQuery').value = searchMatch[1].trim();
+    desktopCommandStatus.textContent = 'Searching your allowed personal folders…';
+    doFileSearch();
+    return;
+  }
+  desktopCommandStatus.textContent = 'Command not recognized. Use an allowed app command or “search files for …”.';
+  toast('That desktop command is not in the allowlist.', 'err');
+}
+if (desktopCommandInput) {
+  $('desktopCommandRun').addEventListener('click', runDesktopCommand);
+  desktopCommandInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); runDesktopCommand(); }
+  });
+}
+/* Ctrl+K focuses the desktop command input only when the ANSHU page is active. */
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    const input = $('desktopCommandInput');
+    if (input && !input.closest('.cap-area')?.classList.contains('open') &&
+        !document.body.classList.contains('cap-desktop-open')) {
+      // Avoid opening hidden inputs; the user can open the Desktop capability panel first.
+      return;
+    }
+    if (input) { e.preventDefault(); input.focus(); }
+  }
+});
+
+$('fileSearch').onclick = doFileSearch;
+$('fileQuery').addEventListener('keydown', e => { if (e.key === 'Enter') doFileSearch(); });
+
+async function openFoundFile(path, name) {
+  try {
+    const d = await api('/api/desktop/open', {path});
+    toast(d.message || ('Opened ' + (name || 'file')), 'ok');
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+function showFileSearchInChat(query, results, errorText = '') {
+  const conversation = $('conversation');
+  if (!conversation) return;
+  const wrap = el('div', {className:'message assistant-message'});
+  const body = el('div', {className:'message-content'});
+  const title = el('strong', {}, 'Desktop file search');
+  body.appendChild(title);
+  body.appendChild(el('div', {}, `Search: “${query}”`));
+  if (errorText) {
+    body.appendChild(el('div', {}, errorText));
+  } else if (!results.length) {
+    body.appendChild(el('div', {}, 'No matching filenames were found in Desktop, Documents, Downloads, Projects, source, or OneDrive Documents. Try a shorter keyword or use the Search Files field in Desktop Tools.'));
+  } else {
+    body.appendChild(el('div', {}, `Found ${results.length} matching file${results.length === 1 ? '' : 's'}:`));
+    results.slice(0, 10).forEach(file => {
+      const line = el('div', {style:'margin-top:7px;padding:7px;border:1px solid var(--border);border-radius:8px;overflow-wrap:anywhere'});
+      const filename = el('div', {}, file.name);
+      const location = el('div', {style:'font-size:10px;color:var(--text-dim);margin-top:3px'}, file.folder);
+      line.append(filename, location);
+      const openBtn = el('button', {className:'btn secondary btn-sm'}, 'Open file');
+      openBtn.style.marginTop = '5px';
+      openBtn.onclick = async () => {
+        if (!confirm('Open file?\n' + file.path)) return;
+        try { const opened = await api('/api/desktop/open', {path:file.path}); toast(opened.message || ('Opened ' + file.name), 'ok'); }
+        catch(err) { toast(err.message, 'err'); }
+      };
+      line.appendChild(openBtn);
+      body.appendChild(line);
+    });
+    if (results.length > 10) body.appendChild(el('div', {style:'font-size:11px;color:var(--text-dim);margin-top:6px'}, 'More results are available in Desktop Tools.'));
+  }
+  wrap.appendChild(body);
+  conversation.appendChild(wrap);
+  conversation.scrollTop = conversation.scrollHeight;
+}
+
+async function doFileSearch() {
+  const q = $('fileQuery').value.trim();
+  const out = $('fileResults');
+  if (q.length < 2) {
+    out.textContent = 'Enter at least 2 characters.';
+    showFileSearchInChat(q, [], 'Please enter at least two characters to search.');
+    return;
+  }
+  out.textContent = 'Searching…';
+  try {
+    const d = await api('/api/desktop/search', { query: q });
+    out.replaceChildren();
+    if (!d.results.length) {
+      out.textContent = 'No matching files found in the allowed folders. Try a shorter filename keyword.';
+      showFileSearchInChat(q, []);
+      toast('File search finished: no matches found.', 'err');
+      return;
+    }
+    const summary = el('div', {style:'font-size:11px;color:var(--text-dim);margin:0 0 6px'});
+    summary.textContent = `Found ${d.results.length} matching file${d.results.length === 1 ? '' : 's'}:`;
+    out.appendChild(summary);
+    d.results.forEach(f => {
+      const row = el('div', {className:'mem-item'});
+      const name = el('div', {className:'mem-item-text'});
+      name.textContent = `${f.name} — ${f.folder} · ${f.modified}`;
+      const openBtn = el('button', {className:'btn secondary btn-sm'}, 'Open');
+      openBtn.onclick = async () => {
+        if (!confirm('Open file?\n' + f.path)) return;
+        try { const result = await api('/api/desktop/open', {path:f.path}); toast(result.message || ('Opened ' + f.name), 'ok'); }
+        catch(err) { toast(err.message, 'err'); }
+      };
+      row.append(name, openBtn);
+      out.appendChild(row);
+    });
+    showFileSearchInChat(q, d.results);
+    toast(`File search finished: ${d.results.length} match${d.results.length === 1 ? '' : 'es'}.`, 'ok');
+  } catch(e) {
+    out.textContent = 'Search failed: ' + e.message;
+    showFileSearchInChat(q, [], 'Search failed: ' + e.message);
+    toast('File search failed: ' + e.message, 'err');
+  }
+}
+
+/* ═══ NOTES (local) ══════════════════════════════════════════ */
+let localNotes = JSON.parse(localStorage.getItem('anshu_phase7_notes') || '[]');
+function renderNotes() {
+  const nl = $('notesList'); nl.replaceChildren();
+  if (!localNotes.length) { nl.textContent = 'No saved notes yet.'; return; }
+  localNotes.forEach((n, i) => {
+    const row = el('div', {className:'mem-item'});
+    const txt = el('div', {className:'mem-item-text'}, n);
+    const del = el('button', {className:'btn secondary btn-sm'}, '×');
+    del.onclick = () => { localNotes.splice(i,1); localStorage.setItem('anshu_phase7_notes', JSON.stringify(localNotes)); renderNotes(); };
+    row.append(txt, del); nl.append(row);
+  });
+}
+$('saveNote').onclick = () => {
+  const v = $('noteInput').value.trim();
+  if (!v) return;
+  localNotes.unshift(v.slice(0,500));
+  localNotes = localNotes.slice(0,40);
+  $('noteInput').value = '';
+  localStorage.setItem('anshu_phase7_notes', JSON.stringify(localNotes));
+  renderNotes(); toast('Note saved.', 'ok');
+};
+renderNotes();
+
+/* ═══ DAILY BRIEF ════════════════════════════════════════════ */
+async function loadBrief() {
+  try {
+    const d = await api('/api/phase13/agenda');
+    $('dailyFocusInput').value = d.focus || '';
+
+    // Sidebar left brief
+    const bc = $('brief-content');
+    bc.textContent = '';
+    const lines = [
+      `DATE: ${d.today}`,
+      `FOCUS: ${d.focus || '(not set)'}`,
+      `OPEN: ${d.openCount} tasks`,
+      `OVERDUE: ${(d.overdue||[]).length}`,
+      `DUE TODAY: ${(d.dueToday||[]).length}`,
+    ];
+    if (d.overdue?.length) {
+      lines.push(''); lines.push('OVERDUE:');
+      d.overdue.slice(0,3).forEach(r => lines.push('⚠ ' + r.text));
+    }
+    if (d.dueToday?.length) {
+      lines.push(''); lines.push('DUE TODAY:');
+      d.dueToday.slice(0,3).forEach(r => lines.push('• ' + r.text));
+    }
+    bc.textContent = lines.join('\n');
+
+    // Right sidebar brief
+    $('br-date').textContent = d.today;
+    $('br-focus').textContent = d.focus || '—';
+    $('br-open').textContent = d.openCount;
+    $('br-overdue').textContent = (d.overdue||[]).length;
+    $('br-today').textContent = (d.dueToday||[]).length;
+  } catch(e) {
+    $('brief-content').textContent = 'Brief unavailable: ' + e.message;
+  }
+}
+
+$('brief-refresh').onclick = loadBrief;
+$('brief-refresh-right').onclick = loadBrief;
+
+$('dailyFocusSave').onclick = async () => {
+  const text = $('dailyFocusInput').value.trim();
+  try {
+    await api('/api/phase13/focus', { text });
+    $('dailyFocusStatus').textContent = text ? 'Focus saved.' : 'Focus cleared.';
+    loadBrief();
+  } catch(e) { $('dailyFocusStatus').textContent = 'Error: ' + e.message; }
+};
+
+loadBrief();
+
+/* ═══ REMINDER NOTIFICATIONS ══════════════════════════════════ */
+$('desktopNotify').onclick = async () => {
+  if (!('Notification' in window)) { $('notifyStatus').textContent = 'Notifications not supported.'; return; }
+  const p = await Notification.requestPermission();
+  $('notifyStatus').textContent = 'Permission: ' + p;
+};
+const notified = new Set();
+async function checkDue() {
+  try {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const d = await api('/api/desktop/reminders');
+    const now = Date.now();
+    d.reminders.filter(r => !r.done && r.due).forEach(r => {
+      const due = Date.parse(r.due);
+      if (Number.isFinite(due) && due <= now && !notified.has(r.id)) {
+        notified.add(r.id);
+        new Notification('ANSHU Reminder', { body: r.text });
+      }
+    });
+  } catch {}
+}
+setInterval(checkDue, 30000);
+
+/* ═══ HAND GESTURE CONTROL ═══════════════════════════════════ */
+const handCursor = $('handCursor');
+const handToggle = $('handToggle');
+const handStatus = $('handStatus');
+const handVideo = $('handVideo');
+let handCamera = null, handEnabled = false, pinching = false;
+let lastHandClick = 0, swipeOriginX = null, swipeStartAt = 0, lastNavGesture = 0;
+let roverGestureMode = false, lastRoverX = null;
+
+$('roverGestureToggle').addEventListener('click', () => {
+  roverGestureMode = !roverGestureMode;
+  $('roverGestureToggle').textContent = roverGestureMode ? 'Disable Rover Gesture Mode' : 'Enable Rover Gesture Mode';
+  $('gestureModeStatus').textContent = roverGestureMode
+    ? 'ROVER MODE: move hand left/right to rotate Scout-01'
+    : 'Gestures: point to move · pinch to click · swipe to switch tabs';
+  lastRoverX = null;
+});
+
+function onHandResults(results) {
+  if (!handEnabled) return;
+  const hands = results.multiHandLandmarks;
+  if (!hands || !hands.length) {
+    handStatus.textContent = 'Looking for a hand…';
+    handCursor.style.display = 'none'; pinching = false; return;
+  }
+  const lm = hands[0];
+  const px = (1-lm[8].x) * innerWidth;
+  const py = lm[8].y * innerHeight;
+  handCursor.style.left = px + 'px'; handCursor.style.top = py + 'px'; handCursor.style.display = 'block';
+  const now = Date.now();
+
+  // Swipe navigation
+  if (!pinching && !roverGestureMode) {
+    if (swipeOriginX === null) { swipeOriginX = lm[8].x; swipeStartAt = now; }
+    const delta = lm[8].x - swipeOriginX;
+    if (Math.abs(delta) > .22 && now - swipeStartAt < 700 && now - lastNavGesture > 900) {
+      lastNavGesture = now;
+      showPage(delta < 0 ? 'anshu' : 'lab');
+      swipeOriginX = null;
+    }
+    if (now - swipeStartAt > 700) { swipeOriginX = lm[8].x; swipeStartAt = now; }
+  } else { swipeOriginX = null; }
+
+  // Rover rotation
+  if (roverGestureMode && !isNaN(lm[8].x)) {
+    if (lastRoverX !== null && Math.abs(lm[8].x - lastRoverX) > .003)
+      rover.rotation.y += (lm[8].x - lastRoverX) * 3.2;
+    lastRoverX = lm[8].x;
+  } else { lastRoverX = null; }
+
+  const dx = lm[4].x - lm[8].x, dy = lm[4].y - lm[8].y;
+  const isPinch = Math.sqrt(dx*dx + dy*dy) < 0.055;
+  handCursor.classList.toggle('pinch', isPinch);
+
+  if (isPinch && !pinching && Date.now() - lastHandClick > 700) {
+    lastHandClick = Date.now();
+    const target = document.elementFromPoint(px, py);
+    const btn = target && target.closest('button');
+    if (btn && !btn.disabled && btn.id !== 'handToggle') {
+      btn.click();
+      handStatus.textContent = 'Clicked: ' + (btn.textContent||'button').trim().slice(0,40);
+    }
+  }
+  pinching = isPinch;
+  if (!isPinch) handStatus.textContent = 'Tracking · point to move, pinch to click';
+}
+
+async function startHandControl() {
+  if (!window.Hands || !window.Camera) {
+    handStatus.textContent = 'Hand-tracking library did not load. Check internet and refresh.'; return;
+  }
+  try {
+    const hands = new window.Hands({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}` });
+    hands.setOptions({ maxNumHands:1, modelComplexity:1, minDetectionConfidence:.65, minTrackingConfidence:.6 });
+    hands.onResults(onHandResults);
+    handCamera = new window.Camera(handVideo, {
+      onFrame: async () => { if (handEnabled) await hands.send({ image: handVideo }); },
+      width: 640, height: 480
+    });
+    handEnabled = true; pinching = false;
+    await handCamera.start();
+    handToggle.textContent = 'Disable Hand Control';
+    handStatus.textContent = 'Camera active. Point to move, pinch to click.';
+    toast('Hand control active.', 'ok');
+  } catch(e) {
+    handEnabled = false; handCursor.style.display = 'none';
+    handStatus.textContent = 'Camera error: ' + (e.message || 'permission denied');
+    toast('Hand control failed: ' + (e.message || 'denied'), 'err');
+  }
+}
+
+function stopHandControl() {
+  handEnabled = false; pinching = false; handCursor.style.display = 'none';
+  if (handCamera) { try { handCamera.stop(); } catch {} handCamera = null; }
+  if (handVideo.srcObject) { handVideo.srcObject.getTracks().forEach(t => t.stop()); handVideo.srcObject = null; }
+  handToggle.textContent = 'Enable Hand Control';
+  handStatus.textContent = 'Hand control is off.';
+}
+
+handToggle.addEventListener('click', () => { handEnabled ? stopHandControl() : startHandControl(); });
+
+/* ═══ ROBOTIC LAB — THREE.JS ═════════════════════════════════ */
+const labCanvasWrap = $('lab-canvas-wrap');
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#030912');
+scene.fog = new THREE.Fog('#030912', 24, 70);
+
+const labCamera = new THREE.PerspectiveCamera(52, 1, .1, 200);
+labCamera.position.set(8, 7, 10);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+labCanvasWrap.appendChild(renderer.domElement);
+
+// Resize renderer — always resize so the canvas has correct dimensions
+function resizeRenderer() {
+  const w = labCanvasWrap.clientWidth || innerWidth;
+  const h = labCanvasWrap.clientHeight || Math.max(innerHeight - 120, 300);
+  renderer.setSize(w, h);
+  labCamera.aspect = w / h;
+  labCamera.updateProjectionMatrix();
+}
+resizeRenderer();
+window.addEventListener('resize', resizeRenderer);
+
+const orbit = new OrbitControls(labCamera, renderer.domElement);
+orbit.target.set(0, .5, 0); orbit.enableDamping = true; orbit.maxPolarAngle = Math.PI / 2.03;
+
+// Lighting
+scene.add(new THREE.HemisphereLight('#a7d9ff','#1a2636', 2.1));
+const keyLight = new THREE.DirectionalLight('#d8efff', 3.1);
+keyLight.position.set(5,12,7); keyLight.castShadow = true; scene.add(keyLight);
+const blueLight = new THREE.PointLight('#00aaff', 25, 18);
+blueLight.position.set(-5, 4, 1);
+scene.add(blueLight);
+
+// Materials
+const mat = (color,metalness=.25,roughness=.45,emissive=null) =>
+  new THREE.MeshStandardMaterial({color,metalness,roughness,...(emissive?{emissive,emissiveIntensity:.8}:{})});
+const chassisMat=mat('#26384b',.8,.32),metal=mat('#8999a9',.8,.25),black=mat('#101923',.35,.7),
+  pcb=mat('#087c54',.25,.65),cyan=mat('#15c8ed',.6,.25,'#00516a'),gold=mat('#c58a35',.65,.3),
+  red=mat('#b62f42',.45,.35),wireRed=mat('#ed4b55'),wireBlack=mat('#111923'),
+  wireYellow=mat('#e9bd48'),wireBlue=mat('#2b8fff');
+
+// Floor
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(100,100), mat('#071321',.1,.9));
+floor.rotation.x = -Math.PI/2; floor.position.y = -.06; floor.receiveShadow = true; scene.add(floor);
+const grid = new THREE.GridHelper(60,60,'#12617c','#122b40'); grid.position.y = -.045; scene.add(grid);
+for(let i=-2;i<=2;i++){const l=new THREE.Mesh(new THREE.BoxGeometry(7,.012,.025),mat('#16425b'));l.position.set(0,-.025,i*2.8);scene.add(l);}
+
+// Rover
+const rover = new THREE.Group(); scene.add(rover);
+const wheelGroups=[];
+const partsGroup=new THREE.Group(); rover.add(partsGroup);
+const wireGroup=new THREE.Group(); rover.add(wireGroup);
+const labelGroup=new THREE.Group(); scene.add(labelGroup);
+
+function box(parent,name,size,pos,material,edge=false){
+  const o=new THREE.Mesh(new THREE.BoxGeometry(...size),material);
+  o.name=name; o.position.set(...pos); o.castShadow=true; o.receiveShadow=true; parent.add(o);
+  if(edge){const e=new THREE.LineSegments(new THREE.EdgesGeometry(o.geometry),new THREE.LineBasicMaterial({color:'#8deeff',transparent:true,opacity:.35}));o.add(e);}
+  return o;
+}
+function cylinder(parent,name,r1,r2,len,pos,material,segments=20,axis='y'){
+  const o=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,len,segments),material);
+  o.name=name; o.position.set(...pos);
+  if(axis==='x')o.rotation.z=Math.PI/2;
+  if(axis==='z')o.rotation.x=Math.PI/2;
+  o.castShadow=true; o.receiveShadow=true; parent.add(o); return o;
+}
+function wire(points,material,r=.025){
+  const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)));
+  const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,24,r,6,false),material);
+  wireGroup.add(mesh); return mesh;
+}
+
+// Chassis
+box(partsGroup,'Steel chassis',[1.75,.22,2.45],[0,.64,0],chassisMat,true);
+box(partsGroup,'Lower chassis lip',[1.85,.09,2.25],[0,.49,0],metal);
+box(partsGroup,'Top mounting plate',[1.58,.07,1.95],[0,.79,0],metal,true);
+
+// Wheels
+for(const x of [-1,1])for(const z of [-.77,.77]){
+  box(partsGroup,'DC gear motor',[.36,.32,.43],[x*.76,.55,z],mat('#c87836',.6,.35));
+  cylinder(partsGroup,'Axle',.075,.075,.22,[x*.9,.46,z],metal,16,'x');
+  const wheelPivot=new THREE.Group(); wheelPivot.position.set(x*.99,.39,z); rover.add(wheelPivot);
+  cylinder(wheelPivot,'Rubber tire',.36,.36,.22,[0,0,0],black,32,'x');
+  cylinder(wheelPivot,'Metal wheel hub',.22,.22,.235,[0,0,0],metal,24,'x');
+  cylinder(wheelPivot,'Cyan hub',.105,.105,.245,[0,0,0],cyan,16,'x');
+  for(let t=0;t<12;t++){const a=t*Math.PI/6;const rib=box(wheelPivot,'Tread rib',[.09,.055,.24],[x*.01,Math.cos(a)*.337,Math.sin(a)*.337],black);rib.rotation.x=a;}
+  wheelGroups.push({pivot:wheelPivot,x,z});
+}
+
+// Electronics
+box(partsGroup,'ESP32 PCB',[.9,.09,.58],[-.12,.91,-.28],pcb,true);
+box(partsGroup,'ESP32 metal RF shield',[.36,.065,.32],[-.18,.99,-.29],metal,true);
+box(partsGroup,'ESP32 antenna',[.25,.012,.1],[-.18,1.03,-.48],mat('#d8e2e8'));
+box(partsGroup,'USB connector',[.17,.11,.13],[-.12,.89,-.61],metal);
+box(partsGroup,'Boot button',[.08,.035,.07],[.2,.98,-.12],red);
+box(partsGroup,'Reset button',[.08,.035,.07],[.31,.98,-.12],metal);
+for(const side of [-1,1])for(let i=0;i<9;i++){box(partsGroup,'GPIO pin',[.035,.12,.035],[-.12+side*.42,.99,-.51+i*.057],gold);}
+
+box(partsGroup,'L298N driver PCB',[.72,.07,.58],[.18,.91,.49],red,true);
+box(partsGroup,'L298N heatsink',[.34,.24,.33],[.18,1.06,.48],metal,true);
+for(let i=0;i<5;i++)box(partsGroup,'Heatsink fin',[.035,.27,.36],[.05+i*.065,1.07,.48],metal);
+box(partsGroup,'Motor terminal block',[.22,.13,.2],[-.12,.99,.68],mat('#d9c7a0'));
+box(partsGroup,'Power terminal block',[.2,.13,.2],[.47,.99,.68],mat('#d9c7a0'));
+for(let i=0;i<4;i++)cylinder(partsGroup,'Driver pin',.025,.025,.06,[-.08+i*.16,.98,.18],gold,10);
+
+box(partsGroup,'Battery pack',[.56,.3,.75],[.47,.98,-.43],black,true);
+for(let i=0;i<2;i++){cylinder(partsGroup,'18650 cell',.115,.115,.58,[.3+i*.31,1.02,-.43],mat('#202c3b'),20,'z');cylinder(partsGroup,'Battery positive cap',.07,.07,.018,[.3+i*.31,1.02,-.73],red,16,'z');}
+box(partsGroup,'Battery strap',[.62,.035,.09],[.47,1.15,-.43],metal);
+
+box(partsGroup,'Front bumper',[1.35,.18,.13],[0,.56,1.31],metal,true);
+box(partsGroup,'Ultrasonic PCB',[.58,.09,.12],[0,.91,1.1],pcb,true);
+for(const x of [-.19,.19]){
+  cylinder(partsGroup,'HC-SR04 transducer',.13,.13,.075,[x,1.02,1.16],metal,28,'z');
+  cylinder(partsGroup,'Sensor face',.095,.095,.08,[x,1.02,1.205],cyan,28,'z');
+  cylinder(partsGroup,'Sensor inner ring',.055,.055,.083,[x,1.02,1.21],black,20,'z');
+}
+box(partsGroup,'Power switch base',[.2,.08,.16],[0,.83,-1.03],black);
+box(partsGroup,'Power switch',[.09,.09,.07],[0,.9,-1.03],red);
+const led=cylinder(partsGroup,'Status LED',.045,.045,.025,[.45,1.04,.05],cyan,16);
+led.rotation.x=Math.PI/2;
+
+// Wires
+wire([[-.47,.99,-.42],[-.52,1.11,-.2],[-.36,1.12,.18],[-.15,1.01,.34]],wireRed,.022);
+wire([[-.4,.99,-.42],[-.55,1.08,-.22],[-.42,1.08,.16],[-.1,1.01,.3]],wireBlack,.022);
+wire([[.15,1.01,-.1],[.43,1.13,.02],[.51,1.13,.26],[.47,1.03,.42]],wireYellow,.02);
+wire([[.21,1.01,-.06],[.54,1.09,.08],[.58,1.09,.3],[.48,1.03,.45]],wireBlue,.02);
+wire([[.12,1.01,.02],[.02,1.15,.12],[-.16,1.15,.18],[-.25,1.01,.19]],wireRed,.018);
+wire([[.22,1.01,.04],[.12,1.12,.15],[-.08,1.12,.21],[-.3,1.01,.23]],wireBlack,.018);
+
+// Labels
+function label(text,pos){
+  const c=document.createElement('canvas');c.width=512;c.height=96;
+  const ctx=c.getContext('2d');ctx.fillStyle='rgba(2,12,25,.84)';ctx.fillRect(0,0,512,96);
+  ctx.strokeStyle='#42dfff';ctx.lineWidth=3;ctx.strokeRect(2,2,508,92);
+  ctx.font='bold 32px monospace';ctx.fillStyle='#8ff1ff';ctx.fillText(text,18,59);
+  const tex=new THREE.CanvasTexture(c);
+  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));
+  sprite.scale.set(1.45,.27,1);sprite.position.set(...pos);labelGroup.add(sprite);return sprite;
+}
+label('ESP32 DEVKIT',[-.2,1.65,-.35]);label('L298N MOTOR DRIVER',[.25,1.58,.57]);
+label('2S BATTERY',[.52,1.52,-.43]);label('HC-SR04 RANGE SENSOR',[0,1.43,1.36]);
+
+// Obstacles
+const obstacles=[];
+const obstacleMat=mat('#d88639',.35,.4,'#3c1600');
+for(const[x,z,r] of [[3,-2,.45],[-3,-1,.55],[2.6,3,.5],[-3.5,3,.4]]){
+  const o=new THREE.Mesh(new THREE.CylinderGeometry(r*.8,r,.9,8),obstacleMat);
+  o.position.set(x,.45,z);o.castShadow=true;scene.add(o);obstacles.push(o);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(r+.1,.018,6,32),cyan);
+  ring.rotation.x=Math.PI/2;ring.position.set(x,.03,z);scene.add(ring);
+}
+
+// Sensor beam
+const beamMat=new THREE.MeshBasicMaterial({color:'#29dcff',transparent:true,opacity:.17,side:THREE.DoubleSide});
+const beam=new THREE.Mesh(new THREE.ConeGeometry(.42,2.5,32,1,true),beamMat);
+beam.rotation.x=-Math.PI/2; beam.position.set(0,1.02,2.35); rover.add(beam);
+
+// Mission markers
+const targetMarker=new THREE.Mesh(new THREE.TorusGeometry(.48,.045,8,40),new THREE.MeshBasicMaterial({color:'#70ffc9'}));
+targetMarker.rotation.x=Math.PI/2;targetMarker.visible=false;scene.add(targetMarker);
+const targetCore=new THREE.Mesh(new THREE.SphereGeometry(.14,16,12),new THREE.MeshBasicMaterial({color:'#70ffc9'}));
+targetCore.visible=false;scene.add(targetCore);
+
+const missionPoints=[{name:'ALPHA',x:5,z:4},{name:'BRAVO',x:-5,z:4},{name:'CHARLIE',x:-5,z:-4},{name:'DELTA',x:5,z:-4}];
+
+// Robot state
+const keys=new Set();
+let active=false,autoAvoid=false,missionActive=false,battery=100,simElapsed=0,last=0;
+let showWires=true,showLabels=true,speed=0;
+let target=null,turnDirection=1,avoidTimer=0;
+let safetyAssist=true, safetyStopReason='', lastSafetyLogAt=0;
+
+const raycaster=new THREE.Raycaster();
+const radarCanvas=$('radar');
+const radarCtx=radarCanvas.getContext('2d');
+
+function getForward(angle=rover.rotation.y){return new THREE.Vector3(Math.sin(angle),0,Math.cos(angle)).normalize();}
+function wrapAngle(a){while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;return a;}
+function measureRange(angle=rover.rotation.y,maxRange=4){
+  const dir=getForward(angle);
+  const origin=new THREE.Vector3(rover.position.x,.65,rover.position.z).addScaledVector(dir,1.22);
+  raycaster.set(origin,dir);raycaster.far=maxRange;
+  const hits=raycaster.intersectObjects(obstacles,false);
+  return hits.length?hits[0].distance:maxRange;
+}
+function clearAhead(angle){return measureRange(angle,3.4);}
+
+function updateLabUI(){
+  $('lab-speed').textContent = speed.toFixed(1)+' m/s';
+  $('lab-battery').textContent = Math.round(battery)+'%';
+  $('lab-battery-bar').style.width = battery+'%';
+  $('lab-range').textContent = (measureRange(rover.rotation.y,4)*100).toFixed(0)+' cm';
+  const rearRange = measureRange(rover.rotation.y + Math.PI,4);
+  $('lab-rear-range').textContent = (rearRange*100).toFixed(0)+' cm';
+  const range=measureRange(rover.rotation.y,4);
+  const alertEl=$('lab-alert');
+  if(range<1.75){alertEl.textContent='NEAR';alertEl.className='mv danger';}
+  else{alertEl.textContent='CLEAR';alertEl.className='mv ok';}
+  const safetyEl=$('lab-safety-status');
+  safetyEl.textContent = battery <= 0 ? 'BATTERY EMPTY' : (safetyStopReason || (safetyAssist ? 'ARMED' : 'OFF'));
+  safetyEl.className = 'mv ' + (battery <= 0 || safetyStopReason ? 'danger' : (safetyAssist ? 'ok' : ''));
+  $('lab-safety').textContent = 'SAFETY ASSIST: ' + (safetyAssist ? 'ON' : 'OFF');
+  $('lab-safety').className = safetyAssist ? 'lab-btn primary full' : 'lab-btn full';
+  $('lb-drive').textContent='DRIVE: '+(active?(speed>0.01?'MOVING':'READY'):'STANDBY');
+  $('lb-mode').textContent='MODE: '+(missionActive?'MISSION':autoAvoid?'AUTO':'MANUAL');
+  $('lb-sim').textContent='SIM: '+(active?'ACTIVE':'STANDBY');
+  $('lb-sim').className='lab-badge'+(active?' online':'');
+  $('lab-mission-status').textContent=missionActive&&target?target.name:'NONE';
+  $('lab-target-dist').textContent=target?Math.hypot(target.x-rover.position.x,target.z-rover.position.z).toFixed(1)+' m':'— m';
+  // Update robotState for chat
+  robotState={active,autoAvoid,missionActive,battery:Math.round(battery),frontRangeCm:Math.round(measureRange(rover.rotation.y,4)*100)};
+}
+
+function drawRadar(){
+  const c=radarCanvas.width,ctx=radarCtx,cx=c/2,cy=c/2,r=c*.43;
+  ctx.clearRect(0,0,c,c);ctx.fillStyle='#04101c';ctx.fillRect(0,0,c,c);
+  ctx.strokeStyle='rgba(48,203,238,.42)';ctx.lineWidth=1;
+  for(const f of[.25,.5,.75,1]){ctx.beginPath();ctx.arc(cx,cy,r*f,0,Math.PI*2);ctx.stroke();}
+  ctx.beginPath();ctx.moveTo(cx,cy-r);ctx.lineTo(cx,cy+r);ctx.moveTo(cx-r,cy);ctx.lineTo(cx+r,cy);ctx.stroke();
+  const fwd=getForward(),right=new THREE.Vector3(fwd.z,0,-fwd.x);
+  for(const o of obstacles){
+    const dx=o.position.x-rover.position.x,dz=o.position.z-rover.position.z;
+    const rel=new THREE.Vector3(dx,0,dz);
+    const fd=rel.dot(fwd),side=rel.dot(right);
+    const dist=Math.hypot(fd,side);if(dist>4.2)continue;
+    const px=cx+side/4.2*r,py=cy-fd/4.2*r;
+    ctx.fillStyle=dist<1.3?'#ff7185':'#ffb14d';ctx.beginPath();ctx.arc(px,py,4,0,Math.PI*2);ctx.fill();
+  }
+  ctx.strokeStyle='#56edff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx,cy-r);ctx.stroke();
+  ctx.fillStyle='#72ffd0';ctx.beginPath();ctx.arc(cx,cy,4,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#78b8ca';ctx.font='9px monospace';ctx.fillText('4m',cx+4,cy-r+10);
+}
+
+// Robot controls
+function labInit(){
+  if(battery <= 0){labLog('Battery empty. Reset the simulation battery before driving.','err');return;}
+  active=true;labLog('Scout-01 initialized. Manual drive ready.','ok');
+}
+function labStop(){
+  keys.clear();active=false;autoAvoid=false;missionActive=false;speed=0;
+  safetyStopReason='';
+  target=null;targetMarker.visible=false;targetCore.visible=false;
+  labLog('Emergency stop. Motors disabled.','err');
+}
+function labSetAuto(on){
+  if(on && battery <= 0){labLog('Battery empty. Reset the simulation battery before autonomous navigation.','err');return;}
+  active=true;autoAvoid=on;missionActive=false;
+  $('lab-auto').textContent=on?'DISABLE AUTO':'AUTO NAV';
+  $('lab-auto').className=on?'lab-btn primary':'lab-btn';
+  labLog(on?'Autonomous navigation online.':'Manual control restored.', on?'ok':'');
+}
+function labMission(){
+  if(battery <= 0){labLog('Battery empty. Reset the simulation battery before starting a mission.','err');return;}
+  active=true;autoAvoid=true;
+  if(!missionActive){
+    const idx=(Number($('lab-mission').dataset.next||'0'))%missionPoints.length;
+    target=missionPoints[idx];$('lab-mission').dataset.next=String((idx+1)%missionPoints.length);
+    targetMarker.position.set(target.x,.045,target.z);targetCore.position.set(target.x,.22,target.z);
+    targetMarker.visible=true;targetCore.visible=true;
+    missionActive=true;$('lab-mission').textContent='PAUSE';
+    labLog('Mission '+target.name+' assigned.','ok');
+  }else{
+    missionActive=false;target=null;targetMarker.visible=false;targetCore.visible=false;
+    $('lab-mission').textContent='MISSION';
+    labLog('Mission paused.','warn');
+  }
+}
+
+$('lab-start').onclick=labInit;
+$('lab-stop').onclick=labStop;
+$('lab-auto').onclick=()=>labSetAuto(!autoAvoid);
+$('lab-mission').onclick=labMission;
+$('lab-safety').onclick=()=>{
+  safetyAssist=!safetyAssist;
+  safetyStopReason='';
+  labLog('Safety assist '+(safetyAssist?'enabled. Manual driving will soft-stop near obstacles.':'disabled. Collision geometry still prevents the rover passing through obstacles.'), safetyAssist?'ok':'warn');
+};
+$('lab-recharge').onclick=()=>{
+  battery=100;
+  safetyStopReason='';
+  labLog('Simulation battery reset to 100%.','ok');
+  toast('Simulation battery reset','ok');
+};
+$('lab-wires').onclick=()=>{showWires=!showWires;wireGroup.visible=showWires;$('lab-wires').textContent=showWires?'HIDE WIRING':'SHOW WIRING';};
+$('lab-labels').onclick=()=>{showLabels=!showLabels;labelGroup.visible=showLabels;$('lab-labels').textContent=showLabels?'HIDE LABELS':'SHOW LABELS';};
+
+// D-pad
+document.querySelectorAll('.dpad-btn').forEach(b=>{
+  const k=b.dataset.key;
+  b.addEventListener('pointerdown',e=>{e.preventDefault();if(active&&!autoAvoid&&!missionActive)keys.add(k);});
+  ['pointerup','pointerleave','pointercancel'].forEach(t=>b.addEventListener(t,()=>keys.delete(k)));
+});
+
+// Keyboard
+window.addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase();
+  if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)){
+    // Only intercept if on lab page and not typing in an input
+    if(!$('page-lab').classList.contains('active'))return;
+    if(document.activeElement&&['INPUT','TEXTAREA'].includes(document.activeElement.tagName))return;
+    e.preventDefault();
+    if(k===' '){labStop();return;}
+    if(active&&!missionActive&&!autoAvoid)keys.add(k);
+  }
+});
+window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
+window.addEventListener('blur',()=>keys.clear());
+
+function driveBriefly(key,duration=1100){
+  if(battery <= 0){labLog('Battery empty. Reset the simulation battery before driving.','err');return;}
+  if(!active){active=true;}
+  autoAvoid=false;missionActive=false;target=null;targetMarker.visible=false;targetCore.visible=false;
+  keys.clear();keys.add(key);
+  setTimeout(()=>keys.delete(key),duration);
+}
+
+function applyRobotAction(action){
+  switch(action){
+    case 'start':labInit();break;
+    case 'stop':labStop();break;
+    case 'auto':if(!autoAvoid)labSetAuto(true);break;
+    case 'manual':labSetAuto(false);break;
+    case 'mission':if(!missionActive)labMission();break;
+    case 'forward':driveBriefly('w',1100);break;
+    case 'reverse':driveBriefly('s',900);break;
+    case 'left':driveBriefly('a',650);break;
+    case 'right':driveBriefly('d',650);break;
+    case 'show_wires':if(!showWires)$('lab-wires').click();break;
+    case 'hide_wires':if(showWires)$('lab-wires').click();break;
+    case 'show_labels':if(!showLabels)$('lab-labels').click();break;
+    case 'hide_labels':if(showLabels)$('lab-labels').click();break;
+  }
+}
+
+// Animate
+function animate(t=0){
+  requestAnimationFrame(animate);
+  const dt=Math.min((t-last)/1000||0,.04);last=t;simElapsed+=dt;
+  let f=0,turn=0;
+  const range=measureRange(rover.rotation.y,4);
+
+  if(active && battery <= 0){
+    active=false;autoAvoid=false;missionActive=false;keys.clear();speed=0;
+    target=null;targetMarker.visible=false;targetCore.visible=false;
+    safetyStopReason='BATTERY EMPTY';
+  }
+  if(active){
+    if(missionActive&&target){
+      const dx=target.x-rover.position.x,dz=target.z-rover.position.z;const dist=Math.hypot(dx,dz);
+      if(dist<.55){
+        const arrivedName = target.name;
+        missionActive=false;target=null;targetMarker.visible=false;targetCore.visible=false;
+        $('lab-mission').textContent='MISSION';
+        labLog('Mission '+arrivedName+' complete!','ok');
+        toast('Mission accomplished: '+arrivedName,'ok');
+      }else{
+        const desired=Math.atan2(dx,dz),err=wrapAngle(desired-rover.rotation.y);
+        if(Math.abs(err)>.16)turn=Math.sign(err)*Math.min(1,Math.abs(err)*1.5);
+        if(range<1.65){turnDirection=clearAhead(rover.rotation.y+Math.PI/2)>clearAhead(rover.rotation.y-Math.PI/2)?1:-1;turn=turnDirection;f=0;avoidTimer=.45;}
+        else if(avoidTimer>0){avoidTimer-=dt;turn=turnDirection;f=.18;}
+        else f=Math.abs(err)>.85?.18:.72;
+      }
+    }else if(autoAvoid){
+      if(range<1.75){avoidTimer=.55;const left=clearAhead(rover.rotation.y+Math.PI/2),right2=clearAhead(rover.rotation.y-Math.PI/2);turnDirection=left>=right2?1:-1;turn=turnDirection;f=0;}
+      else if(avoidTimer>0){avoidTimer-=dt;turn=turnDirection;f=.22;}
+      else{f=.68;turn=Math.sin(simElapsed*.7)*.12;}
+    }else{
+      if(keys.has('w')||keys.has('arrowup'))f+=1;
+      if(keys.has('s')||keys.has('arrowdown'))f-=1;
+      if(keys.has('a')||keys.has('arrowleft'))turn+=1;
+      if(keys.has('d')||keys.has('arrowright'))turn-=1;
+      if(safetyAssist && f > 0 && range < 1.05){
+        f=0;
+        safetyStopReason='FRONT BLOCKED';
+        if(simElapsed-lastSafetyLogAt>1.5){labLog('Safety assist: forward movement paused; obstacle detected ahead.','warn');lastSafetyLogAt=simElapsed;}
+      }else if(safetyAssist && f < 0 && measureRange(rover.rotation.y + Math.PI, 4) < .9){
+        f=0;
+        safetyStopReason='REAR BLOCKED';
+        if(simElapsed-lastSafetyLogAt>1.5){labLog('Safety assist: reverse movement paused; obstacle detected behind.','warn');lastSafetyLogAt=simElapsed;}
+      }else if(f !== 0){
+        safetyStopReason='';
+      }
+    }
+    if(battery <= 0 && f !== 0){
+      f=0;keys.clear();safetyStopReason='BATTERY EMPTY';
+      if(simElapsed-lastSafetyLogAt>1.5){labLog('Battery empty. Drive motors disabled until the simulation battery is reset.','err');lastSafetyLogAt=simElapsed;}
+    }
+    rover.rotation.y+=turn*dt*1.55;
+    const dir=getForward();
+    const nx=rover.position.x+dir.x*f*2.25*dt,nz=rover.position.z+dir.z*f*2.25*dt;
+    const hit=obstacles.some(o=>Math.hypot(o.position.x-nx,o.position.z-nz)<.82);
+    if(!hit){
+      rover.position.x=THREE.MathUtils.clamp(nx,-8,8);
+      rover.position.z=THREE.MathUtils.clamp(nz,-8,8);
+      if(f!==0){wheelGroups.forEach(w=>w.pivot.rotation.x+=f*dt*6);battery=Math.max(0,battery-dt*.012);}
+    }
+  }
+  speed=active&&Math.abs(f)>.01?Math.abs(f)*.72:0;
+
+  beam.position.set(0,1.02,2.35);
+  beam.material.opacity=.10+Math.sin(t*.003)*.035;
+  if(target){targetMarker.rotation.z=simElapsed*.4;targetCore.position.y=.22+Math.sin(simElapsed*3)*.06;}
+
+  updateLabUI();
+  drawRadar();
+  orbit.update();
+
+  // Always render (canvas is hidden via CSS when lab page is inactive, but we must keep loop alive)
+  renderer.render(scene, labCamera);
+}
+animate();
+
+/* ═══ INIT ═══════════════════════════════════════════════════ */
+labLog('ANSHU Phase 13 ready.', 'ok');
+labLog('Virtual hardware: ESP32, L298N, HC-SR04, 2S battery.');
+// Default to ANSHU page
+showPage('anshu');
+
+
+// Phase 35: explicit local diagnostics. No microphone capture or external requests.
+(function initLocalDiagnostics(){
+  const button = document.getElementById('run-diagnostics-btn');
+  const results = document.getElementById('diagnostics-results');
+  if (!button || !results) return;
+  const escapeText = value => String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  function row(label, ok, detail){
+    const mark = ok === true ? '✓' : (ok === false ? '!' : '–');
+    const color = ok === true ? 'var(--cyan)' : (ok === false ? 'var(--red)' : 'var(--text-soft)');
+    return `<div style="display:flex;gap:8px;align-items:flex-start;font-size:12px"><strong style="color:${color};min-width:12px">${mark}</strong><span><b>${escapeText(label)}</b><br><span class="voice-note-txt">${escapeText(detail)}</span></span></div>`;
+  }
+  button.addEventListener('click', async () => {
+    button.disabled = true; button.textContent = 'CHECKING…';
+    const lines = [];
+    lines.push(row('ANSHU local server', true, 'The page is running from the local ANSHU server.'));
+    try {
+      const response = await fetch('/api/health', {method:'GET', cache:'no-store', credentials:'same-origin'});
+      if (!response.ok) throw new Error('Local health endpoint returned HTTP ' + response.status);
+      const health = await response.json();
+      lines.push(row('Ollama service', !!health.ollama, health.ollama ? 'Ollama is responding on this computer.' : 'Ollama is not responding. Start the local Ollama application.'));
+      lines.push(row('Local chat model', !!health.modelInstalled, health.modelInstalled ? `Model ${health.model || 'configured'} is installed.` : `Model ${health.model || 'configured'} is not detected. ${health.message || 'Install the configured model locally.'}`));
+    } catch (error) {
+      lines.push(row('Ollama / local model', false, error && error.message ? error.message : 'Could not check local Ollama.'));
+    }
+    const mediaReady = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+    let micDetail = mediaReady ? 'Browser supports microphone capture. Permission is not requested by this diagnostic.' : 'Microphone capture API is unavailable in this browser/context.';
+    let micOk = mediaReady;
+    if (mediaReady && navigator.permissions && navigator.permissions.query) {
+      try {
+        const permission = await navigator.permissions.query({name:'microphone'});
+        micDetail = permission.state === 'granted' ? 'Microphone permission is already granted.' : permission.state === 'denied' ? 'Microphone permission is blocked. Allow it in browser site settings.' : 'Microphone permission has not been granted yet. Start voice mode when you are ready to allow it.';
+        micOk = permission.state !== 'denied';
+      } catch (_) { micDetail = 'Microphone API is available. Browser does not expose permission status; no permission prompt was opened.'; }
+    }
+    lines.push(row('Microphone readiness', micOk, micDetail));
+    const synthReady = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+    let speechDetail = synthReady ? 'Browser speech output is available.' : 'Browser speech output is unavailable.';
+    let speechOk = synthReady;
+    if (synthReady) {
+      const voices = window.speechSynthesis.getVoices() || [];
+      const english = voices.filter(v => /^en(-|$)/i.test(v.lang || ''));
+      speechOk = english.length > 0;
+      speechDetail = english.length ? `${english.length} English voice(s) available. Selected voice depends on browser/Windows settings.` : 'Speech output exists, but no English voice is currently listed. Install/enable an English Windows voice and restart the browser.';
+    }
+    lines.push(row('English speech output', speechOk, speechDetail));
+    lines.push(row('Network isolation', null, 'This diagnostic contacts only ANSHU and its configured localhost Ollama endpoint. It does not perform a full network audit.'));
+    results.innerHTML = lines.join('');
+    button.disabled = false; button.textContent = 'RUN SYSTEM CHECK AGAIN';
+  });
+})();
+
+</script>
+</body>
+</html>
